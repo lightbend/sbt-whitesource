@@ -21,4 +21,8 @@ scalacOptions  += "-Ywarn-dead-code"
 scalacOptions  += "-Ywarn-numeric-widen"
 scalacOptions  += "-Ywarn-value-discard"
 
+libraryDependencies += "org.whitesource" % "wss-agent-api"        % "2.3.3"
+libraryDependencies += "org.whitesource" % "wss-agent-api-client" % "2.3.3"
+libraryDependencies += "org.whitesource" % "wss-agent-report"     % "2.3.3"
+
 cancelable in Global := true
