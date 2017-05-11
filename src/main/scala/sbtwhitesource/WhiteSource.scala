@@ -12,82 +12,60 @@ import scala.collection.JavaConverters._
 
 import sbt.Logger
 
-object WhiteSource {
+final case class Config(
+    skip: Boolean,
+    failOnError: Boolean,
+    serviceUrl: URI,
+    checkPolicies: Boolean,
+    orgToken: String,
+    forceCheckAllDependencies: Boolean,
+    forceUpdate: Boolean,
+    product: String,
+    productVersion: String,
+    ignoreTestScopeDependencies: Boolean,
+    outDir: File,
+    projectToken: String,
+    ignore: Boolean,
+    includes: Vector[String],
+    excludes: Vector[String],
+    ignoredScopes: Vector[String],
+    aggregateModules: Boolean,
+    aggregateProjectName: String,
+    aggregateProjectToken: String,
+    requesterEmail: String,
+    log: Logger
+)
+
+sealed abstract class BaseAction(config: Config) {
   val agentType: String    = "sbt-plugin"     // TODO: or "sbt-whitesource"
   val agentVersion: String = "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
+  import config._
 
-  // TODO: handle skip in WhitesourceMojo execute
-  // TODO: handleError in WhitesourceMojo execute
-  // TODO: Add finally service.shutdown()
+  // TODO: handleError
+  final def execute(): Unit = {
+    val startTime = System.currentTimeMillis()
 
-  def checkPolicies(
-      serviceUrl: URI,
-      orgToken: String,
-      projectToken: String,
-      product: String,
-      productVersion: String,
-      forceCheckAllDependencies: Boolean,
-      outDir: File,
-      log: Logger
-  ): Unit = {
-    val projectInfos = extractProjectInfos(projectToken, log)
-    if (projectInfos.isEmpty)
-      log info "No open source information found."
-    else
-      sendCheckPolicies(
-        serviceUrl,
-        orgToken,
-        product,
-        productVersion,
-        projectInfos,
-        forceCheckAllDependencies,
-        outDir,
-        log
-      )
+    if (skip) log info "Skipping update" else {
+      var service: WhitesourceService = null
+      try {
+        service = createService(serviceUrl, log)
+        doExecute(service)
+      } finally
+        if (service != null) service.shutdown()
+    }
+
+    log debug s"Total execution time is ${System.currentTimeMillis() - startTime} [msec]"
   }
 
-  def update(
-      checkPolicies: Boolean,
-      serviceUrl: URI,
-      orgToken: String,
-      projectToken: String,
-      product: String,
-      productVersion: String,
-      forceCheckAllDependencies: Boolean,
-      outDir: File,
-      forceUpdate: Boolean,
-      requesterEmail: String,
-      log: Logger
-  ): Unit = {
-    val projectInfos = extractProjectInfos(projectToken, log)
-    if (projectInfos.isEmpty)
-      log info "No open source information found."
-    else
-      sendUpdate(
-        checkPolicies,
-        serviceUrl,
-        orgToken,
-        product,
-        productVersion,
-        projectInfos,
-        forceCheckAllDependencies,
-        outDir,
-        forceUpdate,
-        requesterEmail,
-        log
-      )
-  }
+  protected def doExecute(service: WhitesourceService): Unit
 
-  private def extractProjectInfos(projectToken: String, log: Logger): Vector[AgentProjectInfo] = {
+  final protected def extractProjectInfos(): Vector[AgentProjectInfo] = {
     val projectId = ""
     val artifactId = ""
-    val ignore = false
-    val includes = Vector.empty
-    val excludes = Vector.empty
 
     val projectInfos =
-      if (shouldProcess(projectId, artifactId, ignore, includes, excludes, log)) {
-        Vector(processProject(projectToken, log))
+      if (shouldProcess(projectId, artifactId)) {
+        Vector(processProject())
       } else {
         Vector.empty
       }
@@ -98,15 +76,23 @@ object WhiteSource {
     projectInfos
   }
 
-  private def shouldProcess(
-      projectId: String,
-      artifactId: String,
-      ignore: Boolean,
-      includes: Vector[String],
-      excludes: Vector[String],
-      log: Logger
-  ): Boolean = {
+  final protected def generateReport(result: BaseCheckPoliciesResult): Unit = {
+    log info "Generating Policy Check Report"
+    val report = new PolicyCheckReport(result)
+    report.generate(outDir, false)
+    report generateJson outDir
+    ()
+  }
 
+  private def createService(serviceUrl: URI, log: Logger) = {
+    log info s"Service URL is $serviceUrl"
+    val service = new WhitesourceService(
+      agentType, agentVersion, serviceUrl.toString, /* autoDetectProxySettings = */ false)
+    log info "Initiated WhiteSource Service"
+    service
+  }
+
+  private def shouldProcess(projectId: String, artifactId: String): Boolean = {
     def matchAny(patterns: Vector[String]): Boolean = {
       for (pattern <- patterns) {
         val regex = pattern.replace(".", "\\.").replace("*", ".*")
@@ -127,7 +113,7 @@ object WhiteSource {
     else true
   }
 
-  private def processProject(projectToken: String, log: Logger): AgentProjectInfo = {
+  private def processProject(): AgentProjectInfo = {
     val projectId = "<some project id>"
     log info s"Processing $projectId"
     val projectInfo = new AgentProjectInfo
@@ -162,51 +148,63 @@ object WhiteSource {
     log debug "----------------- dump finished -----------------"
   }
 
-  private def sendCheckPolicies(
-      serviceUrl: URI,
-      orgToken: String,
-      product: String,
-      productVersion: String,
-      projectInfos: Vector[AgentProjectInfo],
-      forceCheckAllDependencies: Boolean,
-      outDir: File,
-      log: Logger
-  ) = {
+  private def handleError(e: Exception) = {
+    val msg = e.getMessage
+    if (failOnError) {
+      log debug msg
+      log trace e
+      sys error msg
+    } else {
+      log error msg
+      log trace e
+    }
+  }
+}
+
+final class CheckPoliciesAction(config: Config) extends BaseAction(config) {
+  import config._
+
+  protected def doExecute(service: WhitesourceService): Unit = {
+    val projectInfos = extractProjectInfos()
+    if (projectInfos.isEmpty)
+      log info "No open source information found."
+    else
+      sendCheckPolicies(service, projectInfos)
+  }
+
+  private def sendCheckPolicies(service: WhitesourceService, projectInfos: Vector[AgentProjectInfo]) = {
     log info "Checking Policies"
-    val service = createService(serviceUrl, log)
 
     val result = service.checkPolicyCompliance(
       orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
 
-    generateReport(result, outDir, log)
+    generateReport(result)
 
     if (result.hasRejections())
       sys error "Some dependencies were rejected by the organization's policies."
     else
       log info "All dependencies conform with the organization's policies."
   }
+}
 
-  private def sendUpdate(
-      checkPolicies: Boolean,
-      serviceUrl: URI,
-      orgToken: String,
-      product: String,
-      productVersion: String,
-      projectInfos: Vector[AgentProjectInfo],
-      forceCheckAllDependencies: Boolean,
-      outDir: File,
-      forceUpdate: Boolean,
-      requesterEmail: String,
-      log: Logger
-  ) = {
-    val service = createService(serviceUrl, log)
+final class UpdateAction(config: Config) extends BaseAction(config) {
+  import config._
 
+  protected def doExecute(service: WhitesourceService): Unit = {
+    val projectInfos = extractProjectInfos()
+    if (projectInfos.isEmpty)
+      log info "No open source information found."
+    else
+      sendUpdate(service, projectInfos)
+  }
+
+  private def sendUpdate(service: WhitesourceService, projectInfos: Vector[AgentProjectInfo]) = {
     if (checkPolicies) {
       log info "Checking Policies"
       val result = service.checkPolicyCompliance(
         orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
 
-      generateReport(result, outDir, log)
+      generateReport(result)
 
       val hasRejections = result.hasRejections
       if (hasRejections && !forceUpdate)
@@ -214,28 +212,13 @@ object WhiteSource {
       else {
         val conformMsg = "All dependencies conform with open source policies."
         val voilateMsg = "Some dependencies violate open source policies, " +
-          "however all were force updated to organization inventory."
+            "however all were force updated to organization inventory."
         log info (if (hasRejections) voilateMsg else conformMsg)
       }
     }
     log info "Sending Update Request to WhiteSource"
     val updateResult = service.update(orgToken, requesterEmail, product, productVersion, projectInfos.asJava)
     logResult(updateResult, log)
-  }
-
-  private def createService(serviceUrl: URI, log: Logger) = {
-    log info s"Service URL is $serviceUrl"
-    val service = new WhitesourceService(
-      agentType, agentVersion, serviceUrl.toString, /* autoDetectProxySettings = */ false)
-    log info "Initiated WhiteSource Service"
-    service
-  }
-
-  private def generateReport(result: BaseCheckPoliciesResult, outDir: File, log: Logger) = {
-    log info "Generating Policy Check Report"
-    val report = new PolicyCheckReport(result)
-    report.generate(outDir, false)
-    report generateJson outDir
   }
 
   private def logResult(result: UpdateInventoryResult, log: Logger): Unit = {
@@ -263,16 +246,7 @@ object WhiteSource {
     }
     log.info("")
   }
+}
 
-  private def handleError(e: Exception, failOnError: Boolean, log: Logger) = {
-    val msg = e.getMessage
-    if (failOnError) {
-      log debug msg
-      log trace e
-      sys error msg
-    } else {
-      log error msg
-      log trace e
-    }
-  }
+object WhiteSource {
 }
