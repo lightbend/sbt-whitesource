@@ -1,6 +1,6 @@
 package sbtwhitesource
 
-import java.io.File
+import java.io.{ File, IOException }
 import java.net.URI
 
 import org.whitesource.agent.api.dispatch._
@@ -36,12 +36,13 @@ final case class Config(
     log: Logger
 )
 
+final case class WhiteSourceException(message: String = null, cause: Exception = null) extends RuntimeException
+
 sealed abstract class BaseAction(config: Config) {
   val agentType: String    = "sbt-plugin"     // TODO: or "sbt-whitesource"
   val agentVersion: String = "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
   import config._
 
-  // TODO: handleError
   final def execute(): Unit = {
     val startTime = System.currentTimeMillis()
 
@@ -50,6 +51,9 @@ sealed abstract class BaseAction(config: Config) {
       try {
         service = createService(serviceUrl, log)
         doExecute(service)
+      } catch {
+        case e: WhiteSourceException => handleError(e)
+        case e: RuntimeException     => throw new RuntimeException("Unexpected error", e)
       } finally
         if (service != null) service.shutdown()
     }
@@ -79,8 +83,12 @@ sealed abstract class BaseAction(config: Config) {
   final protected def generateReport(result: BaseCheckPoliciesResult): Unit = {
     log info "Generating Policy Check Report"
     val report = new PolicyCheckReport(result)
-    report.generate(outDir, false)
-    report generateJson outDir
+    try {
+      report.generate(outDir, false)
+      report generateJson outDir
+    } catch {
+      case e: IOException => throw WhiteSourceException(s"Error generating report: ${e.getMessage}", e)
+    }
     ()
   }
 
@@ -173,17 +181,22 @@ final class CheckPoliciesAction(config: Config) extends BaseAction(config) {
   }
 
   private def sendCheckPolicies(service: WhitesourceService, projectInfos: Vector[AgentProjectInfo]) = {
-    log info "Checking Policies"
+    try {
+      log info "Checking Policies"
 
-    val result = service.checkPolicyCompliance(
-      orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
+      val result = service.checkPolicyCompliance(
+        orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
 
-    generateReport(result)
+      generateReport(result)
 
-    if (result.hasRejections())
-      sys error "Some dependencies were rejected by the organization's policies."
-    else
-      log info "All dependencies conform with the organization's policies."
+      if (result.hasRejections())
+        throw WhiteSourceException("Some dependencies were rejected by the organization's policies.")
+      else
+        log info "All dependencies conform with the organization's policies."
+    } catch {
+      case e: WssServiceException =>
+        throw WhiteSourceException(s"Error communicating with service: ${e.getMessage}", e)
+    }
   }
 }
 
@@ -199,26 +212,31 @@ final class UpdateAction(config: Config) extends BaseAction(config) {
   }
 
   private def sendUpdate(service: WhitesourceService, projectInfos: Vector[AgentProjectInfo]) = {
-    if (checkPolicies) {
-      log info "Checking Policies"
-      val result = service.checkPolicyCompliance(
-        orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
+    try {
+      if (checkPolicies) {
+        log info "Checking Policies"
+        val result = service.checkPolicyCompliance(
+          orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
 
-      generateReport(result)
+        generateReport(result)
 
-      val hasRejections = result.hasRejections
-      if (hasRejections && !forceUpdate)
-        sys error "Some dependencies were rejected by the organization's policies."
-      else {
-        val conformMsg = "All dependencies conform with open source policies."
-        val voilateMsg = "Some dependencies violate open source policies, " +
-            "however all were force updated to organization inventory."
-        log info (if (hasRejections) voilateMsg else conformMsg)
+        val hasRejections = result.hasRejections
+        if (hasRejections && !forceUpdate)
+          throw WhiteSourceException("Some dependencies were rejected by the organization's policies.")
+        else {
+          val conformMsg = "All dependencies conform with open source policies."
+          val voilateMsg = "Some dependencies violate open source policies, " +
+              "however all were force updated to organization inventory."
+          log info (if (hasRejections) voilateMsg else conformMsg)
+        }
       }
+      log info "Sending Update Request to WhiteSource"
+      val updateResult = service.update(orgToken, requesterEmail, product, productVersion, projectInfos.asJava)
+      logResult(updateResult, log)
+    } catch {
+      case e: WssServiceException =>
+        throw WhiteSourceException(s"Error communicating with service: ${e.getMessage}", e)
     }
-    log info "Sending Update Request to WhiteSource"
-    val updateResult = service.update(orgToken, requesterEmail, product, productVersion, projectInfos.asJava)
-    logResult(updateResult, log)
   }
 
   private def logResult(result: UpdateInventoryResult, log: Logger): Unit = {
