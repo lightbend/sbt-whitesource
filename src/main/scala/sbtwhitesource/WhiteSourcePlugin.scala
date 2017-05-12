@@ -71,7 +71,6 @@ object WhiteSourcePlugin extends AutoPlugin {
       settingKey("If set to true the build will fail if there are errors.")
 
     // TODO: Consider "skip in <something>"
-    // TODO: Understand difference with whitesourceIgnore
     val whitesourceSkip: SettingKey[Boolean] =
       settingKey("Set to true to skip the execution.")
 
@@ -136,6 +135,36 @@ object WhiteSourcePlugin extends AutoPlugin {
   override def projectSettings = Seq(
     whitesourceProjectToken   := moduleName.value, // TODO: Validate this is the right default
     whitesourceProduct        := moduleName.value,
-    whitesourceProductVersion := version.value
+    whitesourceProductVersion := version.value,
+
+    whitesourceCheckPolicies := new CheckPoliciesAction(whitesourceConfig.value).execute(),
+    whitesourceUpdate        := new UpdateAction(whitesourceConfig.value).execute()
+  )
+
+  private val whitesourceConfig = Def setting (
+    Config(
+      projectID.value,
+      whitesourceSkip.value,
+      whitesourceFailOnError.value,
+      whitesourceServiceUrl.value,
+      whitesourceCheckPoliciesBeforeUpdate.value,
+      whitesourceOrgToken.value,
+      whitesourceForceCheckAllDependencies.value,
+      whitesourceForceUpdate.value,
+      whitesourceProduct.value,
+      whitesourceProductVersion.value,
+      whitesourceIgnoreTestScopeDependencies.value,
+      target.value / "whitesource",
+      whitesourceProjectToken.value,
+      whitesourceIgnore.value,
+      whitesourceIncludes.value,
+      whitesourceExcludes.value,
+      whitesourceIgnoredScopes.value,
+      whitesourceAggregateModules.value,
+      whitesourceAggregateProjectName.value,
+      whitesourceAggregateProjectToken.value,
+      whitesourceRequesterEmail.value,
+      streams.value.log
+    )
   )
 }

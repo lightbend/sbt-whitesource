@@ -3,16 +3,16 @@ package sbtwhitesource
 import java.io.{ File, IOException }
 import java.net.URI
 
-import org.whitesource.agent.api.dispatch._
-import org.whitesource.agent.api.model._
+import org.whitesource.agent.api._, dispatch._, model._
 import org.whitesource.agent.client._
 import org.whitesource.agent.report._
 
 import scala.collection.JavaConverters._
 
-import sbt.Logger
+import sbt.{ Logger, ModuleID }
 
 final case class Config(
+    projectID: ModuleID,
     skip: Boolean,
     failOnError: Boolean,
     serviceUrl: URI,
@@ -34,7 +34,11 @@ final case class Config(
     aggregateProjectToken: String,
     requesterEmail: String,
     log: Logger
-)
+) {
+  def groupId: String    = projectID.organization
+  def artifactId: String = projectID.name
+  def version: String    = projectID.revision
+}
 
 final case class WhiteSourceException(message: String = null, cause: Exception = null) extends RuntimeException
 
@@ -64,15 +68,7 @@ sealed abstract class BaseAction(config: Config) {
   protected def doExecute(service: WhitesourceService): Unit
 
   final protected def extractProjectInfos(): Vector[AgentProjectInfo] = {
-    val projectId = ""
-    val artifactId = ""
-
-    val projectInfos =
-      if (shouldProcess(projectId, artifactId)) {
-        Vector(processProject())
-      } else {
-        Vector.empty
-      }
+    val projectInfos = if (shouldProcess()) Vector(processProject()) else Vector.empty
     debugProjectInfos(projectInfos, log)
 
     // TODO: Add support for aggregateModules
@@ -100,7 +96,7 @@ sealed abstract class BaseAction(config: Config) {
     service
   }
 
-  private def shouldProcess(projectId: String, artifactId: String): Boolean = {
+  private def shouldProcess(): Boolean = {
     def matchAny(patterns: Vector[String]): Boolean = {
       for (pattern <- patterns) {
         val regex = pattern.replace(".", "\\.").replace("*", ".*")
@@ -122,7 +118,6 @@ sealed abstract class BaseAction(config: Config) {
   }
 
   private def processProject(): AgentProjectInfo = {
-    val projectId = "<some project id>"
     log info s"Processing $projectId"
     val projectInfo = new AgentProjectInfo
     projectInfo setProjectToken projectToken
@@ -131,14 +126,11 @@ sealed abstract class BaseAction(config: Config) {
     projectInfo
   }
 
-  private def extractCoordinates() = {
-    val groupId: String    = ""
-    val artifactId: String = ""
-    val version: String    = ""
-    new Coordinates(groupId, artifactId, version)
-  }
+  private def projectId            = s"$groupId:$artifactId:$version"
+  private def extractCoordinates() = new Coordinates(groupId, artifactId, version)
 
   private def collectDependencyStructure(): Vector[DependencyInfo] = {
+    // TODO: Draw the rest of the owl
     Vector.empty
   }
 
