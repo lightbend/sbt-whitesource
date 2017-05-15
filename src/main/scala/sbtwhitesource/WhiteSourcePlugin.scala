@@ -6,11 +6,9 @@ import org.whitesource.agent.client.ClientConstants
 
 import net.virtualvoid.sbt.graph.DependencyGraphPlugin, DependencyGraphPlugin.autoImport._
 
-// TODO: Decide on GitHub org (change scmInfo)
 // TODO: must have: Need to distinguish direct vs transitive dependencies
 // TODO: git diff should be clean after running
 // TODO: nice to have: parameter to fail the build
-// TODO: Create an issue about Proxy Support
 // TODO: Default wire tasks to package, or similar
 object WhiteSourcePlugin extends AutoPlugin {
   override def requires = plugins.JvmPlugin && DependencyGraphPlugin
@@ -117,6 +115,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceCheckPoliciesBeforeUpdate   := false,
     whitesourceForceCheckAllDependencies   := false,
     whitesourceForceUpdate                 := false,
+    whitesourceProjectToken                := "",
     whitesourceIncludes                    := Vector.empty,
     whitesourceExcludes                    := Vector.empty,
     whitesourceIgnore                      := false,
@@ -137,7 +136,6 @@ object WhiteSourcePlugin extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
-    whitesourceProjectToken   := moduleName.value, // TODO: Validate this is the right default
     whitesourceProduct        := moduleName.value,
     whitesourceProductVersion := version.value,
 
@@ -145,33 +143,31 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceUpdate        := new UpdateAction(whitesourceConfig.value).execute()
   )
 
-  private val whitesourceConfig = Def task (
-    new Config(
-      name.value,
-      projectID.value,
-      whitesourceSkip.value,
-      whitesourceFailOnError.value,
-      whitesourceServiceUrl.value,
-      whitesourceCheckPoliciesBeforeUpdate.value,
-      whitesourceOrgToken.value,
-      whitesourceForceCheckAllDependencies.value,
-      whitesourceForceUpdate.value,
-      whitesourceProduct.value,
-      whitesourceProductVersion.value,
-      (moduleGraph in Compile).value,
-      whitesourceIgnoreTestScopeDependencies.value,
-      target.value / "whitesource",
-      whitesourceProjectToken.value,
-      whitesourceIgnore.value,
-      whitesourceIncludes.value,
-      whitesourceExcludes.value,
-      whitesourceIgnoredScopes.value,
-      whitesourceAggregateModules.value,
-      whitesourceAggregateProjectName.value,
-      whitesourceAggregateProjectToken.value,
-      whitesourceRequesterEmail.value,
-      whitesourceAutoDetectProxySettings.value,
-      streams.value.log
-    )
+  private val whitesourceConfig = Def task new Config(
+    name.value,
+    projectID.value,
+    whitesourceSkip.value,
+    whitesourceFailOnError.value,
+    whitesourceServiceUrl.value,
+    whitesourceCheckPoliciesBeforeUpdate.value,
+    whitesourceOrgToken.value,
+    whitesourceForceCheckAllDependencies.value,
+    whitesourceForceUpdate.value,
+    whitesourceProduct.value,
+    whitesourceProductVersion.value,
+    (moduleGraph in Compile).value,
+    whitesourceIgnoreTestScopeDependencies.value,
+    target.value / "whitesource",
+    whitesourceProjectToken.value,
+    whitesourceIgnore.value,
+    whitesourceIncludes.value,
+    whitesourceExcludes.value,
+    whitesourceIgnoredScopes.value,
+    whitesourceAggregateModules.value,
+    whitesourceAggregateProjectName.value,
+    whitesourceAggregateProjectToken.value,
+    whitesourceRequesterEmail.value,
+    whitesourceAutoDetectProxySettings.value,
+    streams.value.log
   )
 }
