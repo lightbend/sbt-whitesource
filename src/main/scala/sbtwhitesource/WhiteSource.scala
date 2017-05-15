@@ -45,7 +45,8 @@ final class Config(
   def version: String    = projectID.revision
 }
 
-final case class WhiteSourceException(message: String = null, cause: Exception = null) extends RuntimeException
+final case class WhiteSourceException(message: String = null, cause: Exception = null)
+    extends RuntimeException(message, cause)
 
 sealed abstract class BaseAction(config: Config) {
   val agentType: String    = "sbt-plugin"     // TODO: or "sbt-whitesource"
