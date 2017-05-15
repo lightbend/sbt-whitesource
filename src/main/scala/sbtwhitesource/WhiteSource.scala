@@ -11,29 +11,30 @@ import scala.collection.JavaConverters._
 
 import sbt.{ Logger, ModuleID }
 
-final case class Config(
-    projectID: ModuleID,
-    skip: Boolean,
-    failOnError: Boolean,
-    serviceUrl: URI,
-    checkPolicies: Boolean,
-    orgToken: String,
-    forceCheckAllDependencies: Boolean,
-    forceUpdate: Boolean,
-    product: String,
-    productVersion: String,
-    ignoreTestScopeDependencies: Boolean,
-    outDir: File,
-    projectToken: String,
-    ignore: Boolean,
-    includes: Vector[String],
-    excludes: Vector[String],
-    ignoredScopes: Vector[String],
-    aggregateModules: Boolean,
-    aggregateProjectName: String,
-    aggregateProjectToken: String,
-    requesterEmail: String,
-    log: Logger
+final class Config(
+    val projectID: ModuleID,
+    val skip: Boolean,
+    val failOnError: Boolean,
+    val serviceUrl: URI,
+    val checkPolicies: Boolean,
+    val orgToken: String,
+    val forceCheckAllDependencies: Boolean,
+    val forceUpdate: Boolean,
+    val product: String,
+    val productVersion: String,
+    val ignoreTestScopeDependencies: Boolean,
+    val outDir: File,
+    val projectToken: String,
+    val ignore: Boolean,
+    val includes: Vector[String],
+    val excludes: Vector[String],
+    val ignoredScopes: Vector[String],
+    val aggregateModules: Boolean,
+    val aggregateProjectName: String,
+    val aggregateProjectToken: String,
+    val requesterEmail: String,
+    val autoDetectProxySettings: Boolean,
+    val log: Logger
 ) {
   def groupId: String    = projectID.organization
   def artifactId: String = projectID.name
@@ -53,7 +54,7 @@ sealed abstract class BaseAction(config: Config) {
     if (skip) log info "Skipping update" else {
       var service: WhitesourceService = null
       try {
-        service = createService(serviceUrl, log)
+        service = createService()
         doExecute(service)
       } catch {
         case e: WhiteSourceException => handleError(e)
@@ -88,10 +89,10 @@ sealed abstract class BaseAction(config: Config) {
     ()
   }
 
-  private def createService(serviceUrl: URI, log: Logger) = {
+  private def createService() = {
     log info s"Service URL is $serviceUrl"
     val service = new WhitesourceService(
-      agentType, agentVersion, serviceUrl.toString, /* autoDetectProxySettings = */ false)
+      agentType, agentVersion, serviceUrl.toString, autoDetectProxySettings)
     log info "Initiated WhiteSource Service"
     service
   }

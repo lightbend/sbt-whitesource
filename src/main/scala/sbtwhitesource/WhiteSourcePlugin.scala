@@ -103,9 +103,9 @@ object WhiteSourcePlugin extends AutoPlugin {
       settingKey("The provided email will be matched with an existing WhiteSource account. " +
         "Requests for new libraries will be created with the matched account as the requester.")
 
-//    val whitesourceAutoDetectProxySettings: SettingKey[Boolean] =
-//      settingKey("Indicates whether to try to detect proxy configuration in the underlying machine " +
-//        "(e.g. in OS proxy settings, in JVM system properties etc.)")
+    val whitesourceAutoDetectProxySettings: SettingKey[Boolean] =
+      settingKey("Indicates whether to try to detect proxy configuration in the underlying machine " +
+        "(e.g. in OS proxy settings, in JVM system properties etc.)")
   }
   import autoImport._
 
@@ -125,8 +125,9 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceResolveInHouseDependencies  := false,
     whitesourceAggregateModules            := false,
     whitesourceAggregateProjectToken       := (moduleName in LocalRootProject).value,
-    whitesourceAggregateProjectName        := whitesourceAggregateProjectToken.value
-//  whitesourceAutoDetectProxySettings     := false
+    whitesourceAggregateProjectName        := whitesourceAggregateProjectToken.value,
+    whitesourceRequesterEmail              := "",
+    whitesourceAutoDetectProxySettings     := false
   )
 
   override def buildSettings = Seq(
@@ -141,8 +142,8 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceUpdate        := new UpdateAction(whitesourceConfig.value).execute()
   )
 
-  private val whitesourceConfig = Def setting (
-    Config(
+  private val whitesourceConfig = Def task (
+    new Config(
       projectID.value,
       whitesourceSkip.value,
       whitesourceFailOnError.value,
@@ -164,6 +165,7 @@ object WhiteSourcePlugin extends AutoPlugin {
       whitesourceAggregateProjectName.value,
       whitesourceAggregateProjectToken.value,
       whitesourceRequesterEmail.value,
+      whitesourceAutoDetectProxySettings.value,
       streams.value.log
     )
   )
