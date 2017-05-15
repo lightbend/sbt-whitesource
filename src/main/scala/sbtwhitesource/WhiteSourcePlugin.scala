@@ -113,6 +113,7 @@ object WhiteSourcePlugin extends AutoPlugin {
 
   override def globalSettings = Seq(
     whitesourceServiceUrl                  := uri(ClientConstants.DEFAULT_SERVICE_URL),
+    whitesourceOrgToken                    := "", // TODO: Think more about this key and if/how to default it
     whitesourceCheckPoliciesBeforeUpdate   := false,
     whitesourceForceCheckAllDependencies   := false,
     whitesourceForceUpdate                 := false,
