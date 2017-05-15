@@ -157,7 +157,7 @@ object WhiteSourcePlugin extends AutoPlugin {
       whitesourceForceUpdate.value,
       whitesourceProduct.value,
       whitesourceProductVersion.value,
-      moduleGraph.value,
+      (moduleGraph in Compile).value,
       whitesourceIgnoreTestScopeDependencies.value,
       target.value / "whitesource",
       whitesourceProjectToken.value,
