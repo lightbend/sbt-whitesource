@@ -7,8 +7,6 @@ import org.whitesource.agent.client.ClientConstants
 import net.virtualvoid.sbt.graph.DependencyGraphPlugin, DependencyGraphPlugin.autoImport._
 
 // TODO: must have: Need to distinguish direct vs transitive dependencies
-// TODO: git diff should be clean after running
-// TODO: nice to have: parameter to fail the build
 // TODO: Default wire tasks to package, or similar
 object WhiteSourcePlugin extends AutoPlugin {
   override def requires = plugins.JvmPlugin && DependencyGraphPlugin
@@ -57,7 +55,6 @@ object WhiteSourcePlugin extends AutoPlugin {
     val whitesourceExcludes: SettingKey[Vector[String]] =
       settingKey("Modules with an artifactId matching any of these patterns will not be processed.")
 
-    // TODO: Consider "skip in <something>"
     val whitesourceIgnore: SettingKey[Boolean] =
       settingKey("If set to true this module will be ignored. Overrides any include patterns.")
 
@@ -70,7 +67,6 @@ object WhiteSourcePlugin extends AutoPlugin {
     val whitesourceFailOnError: SettingKey[Boolean] =
       settingKey("If set to true the build will fail if there are errors.")
 
-    // TODO: Consider "skip in <something>"
     val whitesourceSkip: SettingKey[Boolean] =
       settingKey("Set to true to skip the execution.")
 
@@ -97,7 +93,6 @@ object WhiteSourcePlugin extends AutoPlugin {
         "overrides `whitesourceAggregateProjectName`. " +
         "If omitted, default to the root project artifactId. " +
         "Will only apply if `whitesourceAggregateModules` is set to true.")
-    // TODO: Validate that defaulting to the root project artifactId is indeed the behaviour
 
     val whitesourceRequesterEmail: SettingKey[String] =
       settingKey("The provided email will be matched with an existing WhiteSource account. " +
