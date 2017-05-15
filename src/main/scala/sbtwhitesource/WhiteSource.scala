@@ -193,12 +193,13 @@ sealed abstract class BaseAction(config: Config) {
 
   private def handleError(e: Exception) = {
     val msg = e.getMessage
+    val msg2 = if (msg eq null) "" else msg
     if (failOnError) {
-      log debug msg
+      if (msg ne null) log debug msg
       log trace e
-      sys error msg
+      sys error msg2
     } else {
-      log error msg
+      if (msg ne null) log error msg
       log trace e
     }
   }
