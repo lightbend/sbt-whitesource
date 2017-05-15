@@ -21,6 +21,7 @@ scalacOptions  += "-Ywarn-dead-code"
 scalacOptions  += "-Ywarn-numeric-widen"
 scalacOptions  += "-Ywarn-value-discard"
 
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
 libraryDependencies += "org.whitesource" % "wss-agent-api"        % "2.3.3"
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % "2.3.3"
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % "2.3.3"

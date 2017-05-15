@@ -4,6 +4,8 @@ import sbt._, Keys._
 
 import org.whitesource.agent.client.ClientConstants
 
+import net.virtualvoid.sbt.graph.DependencyGraphPlugin, DependencyGraphPlugin.autoImport._
+
 // TODO: Decide on GitHub org (change scmInfo)
 // TODO: must have: Need to distinguish direct vs transitive dependencies
 // TODO: git diff should be clean after running
@@ -11,7 +13,7 @@ import org.whitesource.agent.client.ClientConstants
 // TODO: Create an issue about Proxy Support
 // TODO: Default wire tasks to package, or similar
 object WhiteSourcePlugin extends AutoPlugin {
-  override def requires = plugins.JvmPlugin
+  override def requires = plugins.JvmPlugin && DependencyGraphPlugin
   override def trigger  = allRequirements
 
   object autoImport {
@@ -144,6 +146,7 @@ object WhiteSourcePlugin extends AutoPlugin {
 
   private val whitesourceConfig = Def task (
     new Config(
+      name.value,
       projectID.value,
       whitesourceSkip.value,
       whitesourceFailOnError.value,
@@ -154,6 +157,7 @@ object WhiteSourcePlugin extends AutoPlugin {
       whitesourceForceUpdate.value,
       whitesourceProduct.value,
       whitesourceProductVersion.value,
+      moduleGraph.value,
       whitesourceIgnoreTestScopeDependencies.value,
       target.value / "whitesource",
       whitesourceProjectToken.value,

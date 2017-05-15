@@ -11,7 +11,10 @@ import scala.collection.JavaConverters._
 
 import sbt.{ Logger, ModuleID }
 
+import net.virtualvoid.sbt.graph._
+
 final class Config(
+    val projectName: String,
     val projectID: ModuleID,
     val skip: Boolean,
     val failOnError: Boolean,
@@ -22,6 +25,7 @@ final class Config(
     val forceUpdate: Boolean,
     val product: String,
     val productVersion: String,
+    val moduleGraph: ModuleGraph,
     val ignoreTestScopeDependencies: Boolean,
     val outDir: File,
     val projectToken: String,
@@ -130,9 +134,46 @@ sealed abstract class BaseAction(config: Config) {
   private def projectId            = s"$groupId:$artifactId:$version"
   private def extractCoordinates() = new Coordinates(groupId, artifactId, version)
 
+  private lazy val deps = moduleGraph.dependencyMap
+  private def getChildren(node: Module) = deps.getOrElse(node.id, Nil)
+
   private def collectDependencyStructure(): Vector[DependencyInfo] = {
-    // TODO: Draw the rest of the owl
-    Vector.empty
+    val dependencyInfos = moduleGraph.roots.toVector flatMap (getChildren(_) map getDependencyInfo)
+
+    log debug s"*** Printing Graph Results for $projectName"
+    for (dependencyInfo <- dependencyInfos)
+      debugPrintChildren(dependencyInfo, "")
+
+    dependencyInfos
+  }
+
+  private def getDependencyInfo(node: Module): DependencyInfo = {
+    val info = new DependencyInfo()
+    info setGroupId node.id.organisation
+    info setArtifactId node.id.name
+    info setVersion node.id.version
+    info setScope "compile"
+    info setClassifier ""
+    info setOptional false
+    info setType "jar"
+    node.jarFile filter (_.exists()) foreach (artifactFile =>
+      try {
+        info setSystemPath artifactFile.getAbsolutePath
+        info setSha1 (ChecksumUtils calculateSHA1 artifactFile)
+      } catch {
+        case _: IOException => log debug s"Error calculating SHA-1 for ${node.id.idString}"
+      }
+    )
+    info setExclusions List.empty[ExclusionInfo].asJava
+    info setChildren (getChildren(node) map getDependencyInfo).asJava
+    info
+  }
+
+  private def debugPrintChildren(info: DependencyInfo, prefix: String): Unit = {
+    import info._
+    log debug s"$prefix$getGroupId:$getArtifactId:$getVersion:$getScope"
+    for (child <- info.getChildren.asScala)
+      debugPrintChildren(child, s"$prefix   ")
   }
 
   private def debugProjectInfos(projectInfos: Vector[AgentProjectInfo], log: Logger): Unit = {
