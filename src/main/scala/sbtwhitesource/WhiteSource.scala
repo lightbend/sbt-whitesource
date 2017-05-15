@@ -49,8 +49,8 @@ final case class WhiteSourceException(message: String = null, cause: Exception =
     extends RuntimeException(message, cause)
 
 sealed abstract class BaseAction(config: Config) {
-  val agentType: String    = "sbt-plugin"     // TODO: or "sbt-whitesource"
-  val agentVersion: String = "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
+  val agentType: String    = "maven-plugin"     // TODO: use "sbt-plugin" or "sbt-whitesource"
+  val agentVersion: String = "2.3.5" // "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
   import config._
 
   final def execute(): Unit = {
