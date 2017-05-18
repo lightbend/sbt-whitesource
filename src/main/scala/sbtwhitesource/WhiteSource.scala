@@ -77,9 +77,18 @@ sealed abstract class BaseAction(config: Config) {
     val projectInfos = if (shouldProcess()) Vector(processProject()) else Vector.empty
     debugProjectInfos(projectInfos, log)
 
-    // TODO: Add support for aggregateModules
+    if (aggregateModules) {
+      val flatDependencies =
+        projectInfos flatMap (_.getDependencies.asScala flatMap (dep => dep +: extractChildren(dep)))
 
-    projectInfos
+      val aggregatingProject = new AgentProjectInfo
+      aggregatingProject setProjectToken aggregateProjectToken
+      aggregatingProject setCoordinates extractCoordinates()
+      aggregatingProject setDependencies flatDependencies.asJava
+      if (org.apache.commons.lang.StringUtils isNotBlank aggregateProjectName)
+        aggregatingProject.getCoordinates setArtifactId aggregateProjectName
+      Vector(aggregatingProject)
+    } else projectInfos
   }
 
   final protected def generateReport(result: BaseCheckPoliciesResult): Unit = {
@@ -190,6 +199,9 @@ sealed abstract class BaseAction(config: Config) {
     }
     log debug "----------------- dump finished -----------------"
   }
+
+  private def extractChildren(dependency: DependencyInfo): Vector[DependencyInfo] =
+    dependency.getChildren.asScala.flatMap(child => child +: extractChildren(child)).toVector
 
   private def handleError(e: Exception) = {
     val msg = e.getMessage
