@@ -6,7 +6,6 @@ import org.whitesource.agent.client.ClientConstants
 
 import net.virtualvoid.sbt.graph.DependencyGraphPlugin, DependencyGraphPlugin.autoImport._
 
-// TODO: must have: Need to distinguish direct vs transitive dependencies
 // TODO: Default wire tasks to package, or similar
 object WhiteSourcePlugin extends AutoPlugin {
   override def requires = plugins.JvmPlugin && DependencyGraphPlugin
@@ -26,6 +25,9 @@ object WhiteSourcePlugin extends AutoPlugin {
 
     val whitesourceServiceUrl: SettingKey[URI] =
       settingKey("Specifies the WhiteSource Service URL (or IP) to use, for on-premise installations.")
+
+    val whitesourceOnlyDirectDependencies: SettingKey[Boolean] =
+      settingKey("If set to true only direct dependencies will be considered")
 
     val whitesourceCheckPoliciesBeforeUpdate: SettingKey[Boolean] =
       settingKey("If set to true a check policies request will be sent before any update request, " +
@@ -107,6 +109,7 @@ object WhiteSourcePlugin extends AutoPlugin {
   override def globalSettings = Seq(
     whitesourceServiceUrl                  := uri(ClientConstants.DEFAULT_SERVICE_URL),
     whitesourceOrgToken                    := "", // TODO: Think more about this key and if/how to default it
+    whitesourceOnlyDirectDependencies      := false,
     whitesourceCheckPoliciesBeforeUpdate   := false,
     whitesourceForceCheckAllDependencies   := false,
     whitesourceForceUpdate                 := false,
@@ -144,6 +147,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceSkip.value,
     whitesourceFailOnError.value,
     whitesourceServiceUrl.value,
+    whitesourceOnlyDirectDependencies.value,
     whitesourceCheckPoliciesBeforeUpdate.value,
     whitesourceOrgToken.value,
     whitesourceForceCheckAllDependencies.value,

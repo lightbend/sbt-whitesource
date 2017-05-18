@@ -19,6 +19,7 @@ final class Config(
     val skip: Boolean,
     val failOnError: Boolean,
     val serviceUrl: URI,
+    val onlyDirectDependencies: Boolean,
     val checkPolicies: Boolean,
     val orgToken: String,
     val forceCheckAllDependencies: Boolean,
@@ -147,8 +148,9 @@ sealed abstract class BaseAction(config: Config) {
   private lazy val deps = moduleGraph.dependencyMap
   private def getChildren(node: Module) = deps.getOrElse(node.id, Nil)
 
+  // TODO: Handle support for `ignoredScopes`
   private def collectDependencyStructure(): Vector[DependencyInfo] = {
-    val dependencyInfos = moduleGraph.roots.toVector flatMap (getChildren(_) map getDependencyInfo)
+    val dependencyInfos = moduleGraph.roots.iterator.flatMap(getChildren).map(getDependencyInfo).toVector
 
     log debug s"*** Printing Graph Results for $projectName"
     for (dependencyInfo <- dependencyInfos)
@@ -175,7 +177,9 @@ sealed abstract class BaseAction(config: Config) {
       }
     )
     info setExclusions List.empty[ExclusionInfo].asJava
-    info setChildren (getChildren(node) map getDependencyInfo).asJava
+    info setChildren (
+      if (onlyDirectDependencies) List.empty[DependencyInfo] else (getChildren(node) map getDependencyInfo)
+    ).asJava
     info
   }
 
