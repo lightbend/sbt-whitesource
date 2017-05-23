@@ -192,7 +192,9 @@ sealed abstract class BaseAction(config: Config) {
           None
       }
 
-      optScopeAndMr map { case (scope, modReport) => getDependencyInfo(modReport, scope, isOptional.isDefined) }
+      optScopeAndMr filterNot (x => shouldIgnore(x._1.name)) map { case (scope, modReport) =>
+        getDependencyInfo(modReport, scope, isOptional.isDefined)
+      }
     }
 
     val gas =
