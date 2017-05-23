@@ -111,7 +111,9 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceCheckPoliciesBeforeUpdate   := false,
     whitesourceForceCheckAllDependencies   := false,
     whitesourceForceUpdate                 := false,
-    whitesourceProjectToken                := "",
+    whitesourceProjectToken                := (moduleName in LocalRootProject).value,
+    whitesourceProduct                     := (moduleName in LocalRootProject).value,
+    whitesourceProductVersion              := (version in LocalRootProject).value,
     whitesourceIncludes                    := Vector.empty,
     whitesourceExcludes                    := Vector.empty,
     whitesourceIgnore                      := false,
@@ -123,7 +125,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceResolveInHouseDependencies  := false,
     whitesourceAggregateModules            := false,
     whitesourceAggregateProjectToken       := (moduleName in LocalRootProject).value,
-    whitesourceAggregateProjectName        := whitesourceAggregateProjectToken.value,
+    whitesourceAggregateProjectName        := (moduleName in LocalRootProject).value,
     whitesourceRequesterEmail              := "",
     whitesourceAutoDetectProxySettings     := false
   )
@@ -132,9 +134,6 @@ object WhiteSourcePlugin extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
-    whitesourceProduct        := moduleName.value,
-    whitesourceProductVersion := version.value,
-
     whitesourceCheckPolicies := new CheckPoliciesAction(whitesourceConfig.value).execute(),
     whitesourceUpdate        := new UpdateAction(whitesourceConfig.value).execute()
   )
