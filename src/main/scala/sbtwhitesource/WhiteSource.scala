@@ -150,11 +150,10 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
   private def extractCoordinates(c: ProjectConfig) = new Coordinates(c.groupId, c.artifactId, c.version)
   private def extractCoordinates(c: Config)        = new Coordinates(c.projectID.organization, c.projectID.name, c.projectID.revision)
 
-  type ConfKey = String
-
   private def collectDependencyStructure(c: ProjectConfig): Vector[DependencyInfo] = {
     import c._
     type GA = (String, String) // GA, as in GroupId and ArtifactID
+    type ConfKey = String
 
     def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] =
       confReport.modules
@@ -396,7 +395,4 @@ private object MavenScope {
   case object Runtime  extends MavenScope
   case object Test     extends MavenScope
   case object Provided extends MavenScope
-}
-
-object WhiteSource {
 }
