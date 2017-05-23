@@ -12,33 +12,37 @@ import scala.collection.JavaConverters._
 import sbt._
 
 final class Config(
-    val projectName: String,
     val projectID: ModuleID,
     val skip: Boolean,
     val failOnError: Boolean,
     val serviceUrl: URI,
-    val onlyDirectDependencies: Boolean,
     val checkPolicies: Boolean,
     val orgToken: String,
     val forceCheckAllDependencies: Boolean,
     val forceUpdate: Boolean,
     val product: String,
     val productVersion: String,
-    val libraryDependencies: Seq[ModuleID],
-    val updateReport: UpdateReport,
-    val ignoreTestScopeDependencies: Boolean,
     val outDir: File,
-    val projectToken: String,
-    val ignore: Boolean,
-    val includes: Vector[String],
-    val excludes: Vector[String],
-    val ignoredScopes: Vector[String],
     val aggregateModules: Boolean,
     val aggregateProjectName: String,
     val aggregateProjectToken: String,
     val requesterEmail: String,
     val autoDetectProxySettings: Boolean,
     val log: Logger
+)
+
+final class ProjectConfig(
+    val projectName: String,
+    val projectID: ModuleID,
+    val onlyDirectDependencies: Boolean,
+    val libraryDependencies: Seq[ModuleID],
+    val updateReport: UpdateReport,
+    val ignoreTestScopeDependencies: Boolean,
+    val projectToken: String,
+    val ignore: Boolean,
+    val includes: Vector[String],
+    val excludes: Vector[String],
+    val ignoredScopes: Vector[String]
 ) {
   def groupId: String    = projectID.organization
   def artifactId: String = projectID.name
@@ -48,15 +52,15 @@ final class Config(
 final case class WhiteSourceException(message: String = null, cause: Exception = null)
     extends RuntimeException(message, cause)
 
-sealed abstract class BaseAction(config: Config) {
+sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectConfig]) {
   val agentType: String    = "maven-plugin"     // TODO: use "sbt-plugin" or "sbt-whitesource"
   val agentVersion: String = "2.3.5" // "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
-  import config._
+  import config.log
 
   final def execute(): Unit = {
     val startTime = System.currentTimeMillis()
 
-    if (skip) log info "Skipping update" else {
+    if (config.skip) log info "Skipping update" else {
       var service: WhitesourceService = null
       try {
         service = createService()
@@ -74,19 +78,19 @@ sealed abstract class BaseAction(config: Config) {
   protected def doExecute(service: WhitesourceService): Unit
 
   final protected def extractProjectInfos(): Vector[AgentProjectInfo] = {
-    val projectInfos = if (shouldProcess()) Vector(processProject()) else Vector.empty
+    val projectInfos = childConfigs.iterator.filter(shouldProcess).map(processProject).toVector
     debugProjectInfos(projectInfos, log)
 
-    if (aggregateModules) {
+    if (config.aggregateModules) {
       val flatDependencies =
         projectInfos flatMap (_.getDependencies.asScala flatMap (dep => dep +: extractChildren(dep)))
 
       val aggregatingProject = new AgentProjectInfo
-      aggregatingProject setProjectToken aggregateProjectToken
-      aggregatingProject setCoordinates extractCoordinates()
+      aggregatingProject setProjectToken config.aggregateProjectToken
+      aggregatingProject setCoordinates extractCoordinates(config)
       aggregatingProject setDependencies flatDependencies.asJava
-      if (org.apache.commons.lang.StringUtils isNotBlank aggregateProjectName)
-        aggregatingProject.getCoordinates setArtifactId aggregateProjectName
+      if (org.apache.commons.lang.StringUtils isNotBlank config.aggregateProjectName)
+        aggregatingProject.getCoordinates setArtifactId config.aggregateProjectName
       Vector(aggregatingProject)
     } else projectInfos
   }
@@ -95,8 +99,8 @@ sealed abstract class BaseAction(config: Config) {
     log info "Generating Policy Check Report"
     val report = new PolicyCheckReport(result)
     try {
-      report.generate(outDir, false)
-      report generateJson outDir
+      report.generate(config.outDir, false)
+      report generateJson config.outDir
     } catch {
       case e: IOException => throw WhiteSourceException(s"Error generating report: ${e.getMessage}", e)
     }
@@ -104,14 +108,15 @@ sealed abstract class BaseAction(config: Config) {
   }
 
   private def createService() = {
-    log info s"Service URL is $serviceUrl"
+    log info s"Service URL is ${config.serviceUrl}"
     val service = new WhitesourceService(
-      agentType, agentVersion, serviceUrl.toString, autoDetectProxySettings)
+      agentType, agentVersion, config.serviceUrl.toString, config.autoDetectProxySettings)
     log info "Initiated WhiteSource Service"
     service
   }
 
-  private def shouldProcess(): Boolean = {
+  private def shouldProcess(c: ProjectConfig): Boolean = {
+    import c._
     def matchAny(patterns: Vector[String]): Boolean = {
       for (pattern <- patterns) {
         val regex = pattern.replace(".", "\\.").replace("*", ".*")
@@ -122,31 +127,33 @@ sealed abstract class BaseAction(config: Config) {
     }
 
     if (ignore) {
-      log info s"Skipping $projectId (marked as ignored)"
+      log info s"Skipping ${projectId(c)} (marked as ignored)"
       false
     } else if (excludes.nonEmpty && matchAny(excludes)) {
-      log info s"Skipping $projectId (marked as excluded)"
+      log info s"Skipping ${projectId(c)} (marked as excluded)"
       false
     } else if (includes.nonEmpty && matchAny(includes))
       true
     else true
   }
 
-  private def processProject(): AgentProjectInfo = {
-    log info s"Processing $projectId"
+  private def processProject(c: ProjectConfig): AgentProjectInfo = {
+    log info s"Processing ${projectId(c)}"
     val projectInfo = new AgentProjectInfo
-    projectInfo setProjectToken projectToken
-    projectInfo setCoordinates extractCoordinates()
-    projectInfo setDependencies collectDependencyStructure().asJava
+    projectInfo setProjectToken null
+    projectInfo setCoordinates extractCoordinates(c)
+    projectInfo setDependencies collectDependencyStructure(c).asJava
     projectInfo
   }
 
-  private def projectId            = s"$groupId:$artifactId:$version"
-  private def extractCoordinates() = new Coordinates(groupId, artifactId, version)
+  private def projectId(c: ProjectConfig)          = s"${c.groupId}:${c.artifactId}:${c.version}"
+  private def extractCoordinates(c: ProjectConfig) = new Coordinates(c.groupId, c.artifactId, c.version)
+  private def extractCoordinates(c: Config)        = new Coordinates(c.projectID.organization, c.projectID.name, c.projectID.revision)
 
   type ConfKey = String
 
-  private def collectDependencyStructure(): Vector[DependencyInfo] = {
+  private def collectDependencyStructure(c: ProjectConfig): Vector[DependencyInfo] = {
+    import c._
     type GA = (String, String) // GA, as in GroupId and ArtifactID
 
     def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] =
@@ -166,11 +173,13 @@ sealed abstract class BaseAction(config: Config) {
     val providedModuleReports = moduleReports("provided")
     val optionalModuleReports = moduleReports("optional")
 
-    def definedInConfigs(ga: GA): Seq[ConfKey] =
+    def definedInConfigs(ga: GA): Vector[ConfKey] =
       updateReport.configurations.iterator
           .filter(_.modules exists (mr => mr.module.organization == ga._1 && mr.module.name == ga._2))
           .map(_.configuration)
           .toVector
+
+    def shouldIgnore(config: ConfKey) = ignoredScopes contains config
 
     def forGA(ga: GA): Option[DependencyInfo] = {
       val isCompile  =  compileModuleReports get ga
@@ -211,8 +220,6 @@ sealed abstract class BaseAction(config: Config) {
 
     dependencyInfos
   }
-
-  private def shouldIgnore(config: ConfKey) = ignoredScopes contains config
 
   private def getDependencyInfo(mr: ModuleReport, scope: MavenScope, optional: Boolean): DependencyInfo = {
     val info = new DependencyInfo()
@@ -268,7 +275,7 @@ sealed abstract class BaseAction(config: Config) {
   private def handleError(e: Exception) = {
     val msg = e.getMessage
     val msg2 = if (msg eq null) "" else msg
-    if (failOnError) {
+    if (config.failOnError) {
       if (msg ne null) log debug msg
       log trace e
       sys error msg2
@@ -279,7 +286,7 @@ sealed abstract class BaseAction(config: Config) {
   }
 }
 
-final class CheckPoliciesAction(config: Config) extends BaseAction(config) {
+final class CheckPoliciesAction(config: Config, childConfigs: Vector[ProjectConfig]) extends BaseAction(config, childConfigs) {
   import config._
 
   protected def doExecute(service: WhitesourceService): Unit = {
@@ -310,7 +317,7 @@ final class CheckPoliciesAction(config: Config) extends BaseAction(config) {
   }
 }
 
-final class UpdateAction(config: Config) extends BaseAction(config) {
+final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) extends BaseAction(config, childConfigs) {
   import config._
 
   protected def doExecute(service: WhitesourceService): Unit = {

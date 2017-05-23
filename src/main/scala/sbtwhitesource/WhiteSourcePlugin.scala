@@ -127,44 +127,60 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceAggregateProjectToken       := (moduleName in LocalRootProject).value,
     whitesourceAggregateProjectName        := (moduleName in LocalRootProject).value,
     whitesourceRequesterEmail              := "",
-    whitesourceAutoDetectProxySettings     := false
+    whitesourceAutoDetectProxySettings     := false,
+    aggregate in whitesourceCheckPolicies  := false,
+    aggregate in whitesourceUpdate         := false
   )
 
   override def buildSettings = Seq(
   )
 
   override def projectSettings = Seq(
-    whitesourceCheckPolicies := new CheckPoliciesAction(whitesourceConfig.value).execute(),
-    whitesourceUpdate        := new UpdateAction(whitesourceConfig.value).execute()
+    whitesourceCheckPolicies :=
+        new CheckPoliciesAction(
+            whitesourceConfig.value,
+            whitesourceProjectConfig.all(thisProjectAggregates).value.toVector
+        ).execute(),
+    whitesourceUpdate :=
+        new UpdateAction(
+            whitesourceConfig.value,
+            whitesourceProjectConfig.all(thisProjectAggregates).value.toVector
+        ).execute()
   )
 
+  private val thisProjectAggregates = ScopeFilter(inAggregates(ThisProject, includeRoot = false))
+
   private val whitesourceConfig = Def task new Config(
-    name.value,
     projectID.value,
     whitesourceSkip.value,
     whitesourceFailOnError.value,
     whitesourceServiceUrl.value,
-    whitesourceOnlyDirectDependencies.value,
     whitesourceCheckPoliciesBeforeUpdate.value,
     whitesourceOrgToken.value,
     whitesourceForceCheckAllDependencies.value,
     whitesourceForceUpdate.value,
     whitesourceProduct.value,
     whitesourceProductVersion.value,
-    libraryDependencies.value,
-    update.value,
-    whitesourceIgnoreTestScopeDependencies.value,
     target.value,
-    whitesourceProjectToken.value,
-    whitesourceIgnore.value,
-    whitesourceIncludes.value,
-    whitesourceExcludes.value,
-    whitesourceIgnoredScopes.value,
     whitesourceAggregateModules.value,
     whitesourceAggregateProjectName.value,
     whitesourceAggregateProjectToken.value,
     whitesourceRequesterEmail.value,
     whitesourceAutoDetectProxySettings.value,
     streams.value.log
+  )
+
+  private val whitesourceProjectConfig = Def task new ProjectConfig(
+    name.value,
+    projectID.value,
+    whitesourceOnlyDirectDependencies.value,
+    libraryDependencies.value,
+    update.value,
+    whitesourceIgnoreTestScopeDependencies.value,
+    whitesourceProjectToken.value,
+    whitesourceIgnore.value,
+    whitesourceIncludes.value,
+    whitesourceExcludes.value,
+    whitesourceIgnoredScopes.value
   )
 }
