@@ -179,19 +179,20 @@ sealed abstract class BaseAction(config: Config) {
       val isRuntime  =  runtimeModuleReports get ga
       val isTest     =     testModuleReports get ga
       val isProvided = providedModuleReports get ga
-      val isOptional = optionalModuleReports contains ga
+      val isOptional = optionalModuleReports get ga
 
-      val optScopeAndMr = (isCompile, isRuntime, isTest, isProvided) match {
-        case (None, _, _, Some(mr)) => Some((MavenScope.Provided, mr))
-        case (Some(mr), _, _, _)    => Some((MavenScope.Compile, mr))
-        case (_, Some(mr), _, _)    => Some((MavenScope.Runtime, mr))
-        case (_, _, Some(mr), _)    => Some((MavenScope.Test, mr))
+      val optScopeAndMr = (isCompile, isRuntime, isTest, isProvided, isOptional) match {
+        case (None, _, _, Some(mr), _) => Some((MavenScope.Provided, mr))
+        case (Some(mr), _, _, _, _)    => Some((MavenScope.Compile, mr))
+        case (_, Some(mr), _, _, _)    => Some((MavenScope.Runtime, mr))
+        case (_, _, Some(mr), _, _)    => Some((MavenScope.Test, mr))
+        case (_, _, _, _, Some(mr))    => Some((MavenScope.Compile, mr))
         case _                      =>
           log warn s"Ignoring dependency $ga which is defined in config(s) ${definedInConfigs(ga)}"
           None
       }
 
-      optScopeAndMr map { case (scope, modReport) => getDependencyInfo(modReport, scope, isOptional) }
+      optScopeAndMr map { case (scope, modReport) => getDependencyInfo(modReport, scope, isOptional.isDefined) }
     }
 
     val gas =
