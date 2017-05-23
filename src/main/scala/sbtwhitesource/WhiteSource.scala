@@ -55,12 +55,12 @@ final case class WhiteSourceException(message: String = null, cause: Exception =
 sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectConfig]) {
   val agentType: String    = "maven-plugin"     // TODO: use "sbt-plugin" or "sbt-whitesource"
   val agentVersion: String = "2.3.5" // "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
-  import config.log
+  import config._
 
   final def execute(): Unit = {
     val startTime = System.currentTimeMillis()
 
-    if (config.skip) log info "Skipping update" else {
+    if (skip) log info "Skipping update" else {
       var service: WhitesourceService = null
       try {
         service = createService()
@@ -81,16 +81,16 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     val projectInfos = childConfigs.iterator.filter(shouldProcess).map(processProject).toVector
     debugProjectInfos(projectInfos, log)
 
-    if (config.aggregateModules) {
+    if (aggregateModules) {
       val flatDependencies =
         projectInfos flatMap (_.getDependencies.asScala flatMap (dep => dep +: extractChildren(dep)))
 
       val aggregatingProject = new AgentProjectInfo
-      aggregatingProject setProjectToken config.aggregateProjectToken
+      aggregatingProject setProjectToken aggregateProjectToken
       aggregatingProject setCoordinates extractCoordinates(config)
       aggregatingProject setDependencies flatDependencies.asJava
-      if (org.apache.commons.lang.StringUtils isNotBlank config.aggregateProjectName)
-        aggregatingProject.getCoordinates setArtifactId config.aggregateProjectName
+      if (org.apache.commons.lang.StringUtils isNotBlank aggregateProjectName)
+        aggregatingProject.getCoordinates setArtifactId aggregateProjectName
       Vector(aggregatingProject)
     } else projectInfos
   }
@@ -99,8 +99,8 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     log info "Generating Policy Check Report"
     val report = new PolicyCheckReport(result)
     try {
-      report.generate(config.outDir, false)
-      report generateJson config.outDir
+      report.generate(outDir, false)
+      report generateJson outDir
     } catch {
       case e: IOException => throw WhiteSourceException(s"Error generating report: ${e.getMessage}", e)
     }
@@ -108,9 +108,9 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
   }
 
   private def createService() = {
-    log info s"Service URL is ${config.serviceUrl}"
+    log info s"Service URL is ${serviceUrl}"
     val service = new WhitesourceService(
-      agentType, agentVersion, config.serviceUrl.toString, config.autoDetectProxySettings)
+      agentType, agentVersion, serviceUrl.toString, autoDetectProxySettings)
     log info "Initiated WhiteSource Service"
     service
   }
@@ -275,7 +275,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
   private def handleError(e: Exception) = {
     val msg = e.getMessage
     val msg2 = if (msg eq null) "" else msg
-    if (config.failOnError) {
+    if (failOnError) {
       if (msg ne null) log debug msg
       log trace e
       sys error msg2
@@ -342,9 +342,9 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
           throw WhiteSourceException("Some dependencies were rejected by the organization's policies.")
         else {
           val conformMsg = "All dependencies conform with open source policies."
-          val voilateMsg = "Some dependencies violate open source policies, " +
+          val violateMsg = "Some dependencies violate open source policies, " +
               "however all were force updated to organization inventory."
-          log info (if (hasRejections) voilateMsg else conformMsg)
+          log info (if (hasRejections) violateMsg else conformMsg)
         }
       }
       log info "Sending Update Request to WhiteSource"
