@@ -20,13 +20,13 @@ Then set `whitesourceOrgToken` with one of the following ways:
 
 1) Set it in sbt's `shell`:
 
-```scala
+```
 set whitesourceOrgToken in ThisBuild := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
 
 2) Set it when starting sbt up:
 
-```scala
+```
 sbt 'set whitesourceOrgToken in ThisBuild := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"' shell
 ```
 
