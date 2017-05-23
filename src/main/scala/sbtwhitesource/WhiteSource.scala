@@ -144,10 +144,10 @@ sealed abstract class BaseAction(config: Config) {
   private def projectId            = s"$groupId:$artifactId:$version"
   private def extractCoordinates() = new Coordinates(groupId, artifactId, version)
 
-  // TODO: Handle support for `ignoredScopes`
+  type ConfKey = String
+
   private def collectDependencyStructure(): Vector[DependencyInfo] = {
     type GA = (String, String) // GA, as in GroupId and ArtifactID
-    type ConfKey = String
 
     def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] =
       confReport.modules
@@ -167,12 +167,10 @@ sealed abstract class BaseAction(config: Config) {
     val optionalModuleReports = moduleReports("optional")
 
     def definedInConfigs(ga: GA): Seq[ConfKey] =
-      updateReport.configurations flatMap (cr =>
-        if (cr.modules.exists(mr => mr.module.organization == ga._1 && mr.module.name == ga._2))
-          List(cr.configuration)
-        else
-          Nil
-          )
+      updateReport.configurations.iterator
+          .filter(_.modules exists (mr => mr.module.organization == ga._1 && mr.module.name == ga._2))
+          .map(_.configuration)
+          .toVector
 
     def forGA(ga: GA): Option[DependencyInfo] = {
       val isCompile  =  compileModuleReports get ga
@@ -187,8 +185,10 @@ sealed abstract class BaseAction(config: Config) {
         case (_, Some(mr), _, _, _)    => Some((MavenScope.Runtime, mr))
         case (_, _, Some(mr), _, _)    => Some((MavenScope.Test, mr))
         case (_, _, _, _, Some(mr))    => Some((MavenScope.Compile, mr))
-        case _                      =>
-          log warn s"Ignoring dependency $ga which is defined in config(s) ${definedInConfigs(ga)}"
+        case _                         =>
+          val configs = definedInConfigs(ga) filterNot shouldIgnore
+          if (configs.nonEmpty)
+            log warn s"Ignoring dependency $ga which is defined in config(s) $configs"
           None
       }
 
@@ -209,6 +209,8 @@ sealed abstract class BaseAction(config: Config) {
 
     dependencyInfos
   }
+
+  private def shouldIgnore(config: ConfKey) = ignoredScopes contains config
 
   private def getDependencyInfo(mr: ModuleReport, scope: MavenScope, optional: Boolean): DependencyInfo = {
     val info = new DependencyInfo()

@@ -116,7 +116,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceExcludes                    := Vector.empty,
     whitesourceIgnore                      := false,
     whitesourceIgnoreTestScopeDependencies := true,
-    whitesourceIgnoredScopes               := Vector("test", "provided"),
+    whitesourceIgnoredScopes               := Vector("test", "provided", "scala-tool"),
     whitesourceFailOnError                 := false,
     whitesourceSkip                        := false,
     whitesourceReportAsJson                := false,
