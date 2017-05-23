@@ -2,7 +2,7 @@ val sbtwhitesource = project in file(".")
 
 organization := "com.lightbend"
         name := "sbt-whitesource"
-     version := "0.1.0-SNAPSHOT"
+     version := "0.1.0"
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0")))
  description := "An sbt plugin to keep your WhiteSource project up to date"
   developers := List(Developer("dwijnand", "Dale Wijnand", "dale wijnand gmail com", url("https://dwijnand.com")))

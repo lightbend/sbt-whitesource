@@ -14,8 +14,6 @@ Add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you prefer on
 
     addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.0")
 
-**NOTE** 0.1.0 is still unreleased. Run `publishLocal` and use `0.1.0-SNAPSHOT` for now.
-
 Then set `whitesourceOrgToken` with one of the following ways:
 
 1) Set it in sbt's `shell`:
