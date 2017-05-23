@@ -10,11 +10,15 @@ an [external update agent][whitesource/agents] for sbt.
 
 ## Setup
 
-Add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you prefer one file per plugin):
+First, ensure you have permission to read from Lightbend's private Bintray repositories.
+
+Then add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you prefer one file per plugin):
+
+    resolvers += Resolver.bintrayIvyRepo("typesafe", "internal-ivy-releases")
 
     addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.0")
 
-Then set `whitesourceOrgToken` with one of the following ways:
+Finally set `whitesourceOrgToken` with one of the following ways:
 
 1) Set it in sbt's `shell`:
 
