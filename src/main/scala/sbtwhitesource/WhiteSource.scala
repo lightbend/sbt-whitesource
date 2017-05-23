@@ -9,9 +9,7 @@ import org.whitesource.agent.report._
 
 import scala.collection.JavaConverters._
 
-import sbt.{ Logger, ModuleID }
-
-import net.virtualvoid.sbt.graph._
+import sbt._
 
 final class Config(
     val projectName: String,
@@ -26,7 +24,8 @@ final class Config(
     val forceUpdate: Boolean,
     val product: String,
     val productVersion: String,
-    val moduleGraph: ModuleGraph,
+    val libraryDependencies: Seq[ModuleID],
+    val updateReport: UpdateReport,
     val ignoreTestScopeDependencies: Boolean,
     val outDir: File,
     val projectToken: String,
@@ -145,12 +144,63 @@ sealed abstract class BaseAction(config: Config) {
   private def projectId            = s"$groupId:$artifactId:$version"
   private def extractCoordinates() = new Coordinates(groupId, artifactId, version)
 
-  private lazy val deps = moduleGraph.dependencyMap
-  private def getChildren(node: Module) = deps.getOrElse(node.id, Nil)
-
   // TODO: Handle support for `ignoredScopes`
   private def collectDependencyStructure(): Vector[DependencyInfo] = {
-    val dependencyInfos = moduleGraph.roots.iterator.flatMap(getChildren).map(getDependencyInfo).toVector
+    type GA = (String, String) // GA, as in GroupId and ArtifactID
+    type ConfKey = String
+
+    def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] =
+      confReport.modules
+          .groupBy(mr => (mr.module.organization, mr.module.name))
+          .map { case (k, Seq(v)) => k -> v }
+
+    def moduleReports(config: String): Map[GA, ModuleReport] =
+      updateReport.configuration(config) match {
+        case Some(confReport) => moduleReportsByGA(confReport)
+        case None             => Map.empty
+      }
+
+    val  compileModuleReports = moduleReports("compile")
+    val  runtimeModuleReports = moduleReports("runtime")
+    val     testModuleReports = moduleReports("test")
+    val providedModuleReports = moduleReports("provided")
+    val optionalModuleReports = moduleReports("optional")
+
+    def definedInConfigs(ga: GA): Seq[ConfKey] =
+      updateReport.configurations flatMap (cr =>
+        if (cr.modules.exists(mr => mr.module.organization == ga._1 && mr.module.name == ga._2))
+          List(cr.configuration)
+        else
+          Nil
+          )
+
+    def forGA(ga: GA): Option[DependencyInfo] = {
+      val isCompile  =  compileModuleReports get ga
+      val isRuntime  =  runtimeModuleReports get ga
+      val isTest     =     testModuleReports get ga
+      val isProvided = providedModuleReports get ga
+      val isOptional = optionalModuleReports contains ga
+
+      val optScopeAndMr = (isCompile, isRuntime, isTest, isProvided) match {
+        case (None, _, _, Some(mr)) => Some((MavenScope.Provided, mr))
+        case (Some(mr), _, _, _)    => Some((MavenScope.Compile, mr))
+        case (_, Some(mr), _, _)    => Some((MavenScope.Runtime, mr))
+        case (_, _, Some(mr), _)    => Some((MavenScope.Test, mr))
+        case _                      =>
+          log warn s"Ignoring dependency $ga which is defined in config(s) ${definedInConfigs(ga)}"
+          None
+      }
+
+      optScopeAndMr map { case (scope, modReport) => getDependencyInfo(modReport, scope, isOptional) }
+    }
+
+    val gas =
+      if (onlyDirectDependencies) libraryDependencies map (m => (m.organization, m.name))
+      else updateReport.configurations
+          .flatMap(_.modules map (mr => (mr.module.organization, mr.module.name)))
+          .distinct
+
+    val dependencyInfos = gas.toVector flatMap forGA
 
     log debug s"*** Printing Graph Results for $projectName"
     for (dependencyInfo <- dependencyInfos)
@@ -159,28 +209,31 @@ sealed abstract class BaseAction(config: Config) {
     dependencyInfos
   }
 
-  private def getDependencyInfo(node: Module): DependencyInfo = {
+  private def getDependencyInfo(mr: ModuleReport, scope: MavenScope, optional: Boolean): DependencyInfo = {
     val info = new DependencyInfo()
-    info setGroupId node.id.organisation
-    info setArtifactId node.id.name
-    info setVersion node.id.version
-    info setScope "compile"
-    info setClassifier ""
-    info setOptional false
-    info setType "jar"
-    node.jarFile filter (_.exists()) foreach (artifactFile =>
-      try {
-        info setSystemPath artifactFile.getAbsolutePath
-        info setSha1 (ChecksumUtils calculateSHA1 artifactFile)
-      } catch {
-        case _: IOException => log debug s"Error calculating SHA-1 for ${node.id.idString}"
-      }
-    )
+    info setGroupId mr.module.organization
+    info setArtifactId mr.module.name
+    info setVersion mr.module.revision
+    info setScope scope.name
+    info setOptional optional
+    val artifactAndJar2 = artifactAndJar(mr)
+    info setClassifier artifactAndJar2.flatMap(_._1.classifier).orNull
+    info setType artifactAndJar2.map(_._1.`type`).orNull
+    try {
+      info setSystemPath artifactAndJar2.map(_._2.getAbsolutePath).orNull
+      info setSha1 artifactAndJar2.map(ChecksumUtils calculateSHA1 _._2).orNull
+    } catch {
+      case _: IOException => log debug s"Error calculating SHA-1 for ${mr.module}"
+    }
     info setExclusions List.empty[ExclusionInfo].asJava
-    info setChildren (
-      if (onlyDirectDependencies) List.empty[DependencyInfo] else (getChildren(node) map getDependencyInfo)
-    ).asJava
+    info setChildren List.empty[DependencyInfo].asJava
     info
+  }
+
+  private def artifactAndJar(modReport: ModuleReport) = {
+    val artifacts = modReport.artifacts
+    artifacts find (_._1.`type` == Artifact.DefaultType) orElse
+        (artifacts find (_._1.extension == Artifact.DefaultExtension))
   }
 
   private def debugPrintChildren(info: DependencyInfo, prefix: String): Unit = {
@@ -316,6 +369,21 @@ final class UpdateAction(config: Config) extends BaseAction(config) {
     }
     log.info("")
   }
+}
+
+private sealed trait MavenScope {
+  def name: String = this match {
+    case MavenScope.Compile  => "compile"
+    case MavenScope.Runtime  => "runtime"
+    case MavenScope.Test     => "test"
+    case MavenScope.Provided => "provided"
+  }
+}
+private object MavenScope {
+  case object Compile  extends MavenScope
+  case object Runtime  extends MavenScope
+  case object Test     extends MavenScope
+  case object Provided extends MavenScope
 }
 
 object WhiteSource {

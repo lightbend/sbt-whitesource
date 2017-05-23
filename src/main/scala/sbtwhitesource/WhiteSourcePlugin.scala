@@ -4,11 +4,9 @@ import sbt._, Keys._
 
 import org.whitesource.agent.client.ClientConstants
 
-import net.virtualvoid.sbt.graph.DependencyGraphPlugin, DependencyGraphPlugin.autoImport._
-
 // TODO: Default wire tasks to package, or similar
 object WhiteSourcePlugin extends AutoPlugin {
-  override def requires = plugins.JvmPlugin && DependencyGraphPlugin
+  override def requires = plugins.JvmPlugin
   override def trigger  = allRequirements
 
   object autoImport {
@@ -154,7 +152,8 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceForceUpdate.value,
     whitesourceProduct.value,
     whitesourceProductVersion.value,
-    (moduleGraph in Compile).value,
+    libraryDependencies.value,
+    update.value,
     whitesourceIgnoreTestScopeDependencies.value,
     target.value,
     whitesourceProjectToken.value,
