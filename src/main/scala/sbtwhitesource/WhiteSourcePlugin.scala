@@ -122,7 +122,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceSkip                        := false,
     whitesourceReportAsJson                := false,
     whitesourceResolveInHouseDependencies  := false,
-    whitesourceAggregateModules            := false,
+    whitesourceAggregateSubprojects        := true,
     whitesourceAggregateProjectToken       := (moduleName in LocalRootProject).value,
     whitesourceAggregateProjectName        := (moduleName in LocalRootProject).value,
     whitesourceRequesterEmail              := "",
