@@ -18,8 +18,8 @@ object WhiteSourcePlugin extends AutoPlugin {
       taskKey("Sends an update request of open source software usage information to WhiteSource " +
         "and then generates a report. See also `whitesourceCheckPoliciesBeforeUpdate`.")
 
-    val whitesourceOrgToken: SettingKey[String] =
-      settingKey("Uniquely identifies a WhiteSource organization.")
+    val whitesourceOrgToken: TaskKey[String] =
+      taskKey("Uniquely identifies a WhiteSource organization.")
 
     val whitesourceServiceUrl: SettingKey[URI] =
       settingKey("Specifies the WhiteSource Service URL (or IP) to use, for on-premise installations.")
@@ -106,7 +106,6 @@ object WhiteSourcePlugin extends AutoPlugin {
 
   override def globalSettings = Seq(
     whitesourceServiceUrl                  := uri(ClientConstants.DEFAULT_SERVICE_URL),
-    whitesourceOrgToken                    := "",
     whitesourceOnlyDirectDependencies      := false,
     whitesourceCheckPoliciesBeforeUpdate   := false,
     whitesourceForceCheckAllDependencies   := false,
@@ -133,6 +132,16 @@ object WhiteSourcePlugin extends AutoPlugin {
   )
 
   override def projectSettings = Seq(
+    whitesourceOrgToken := {
+      val cs = credentials.value
+      val log = streams.value.log
+      def pass = (Credentials.allDirect(cs) find { _.realm == "whitesource" }) match {
+        case Some(cred) => cred.passwd
+        case None =>
+          sys.error("""Whitesource credential is missing. Append to credentials key with realm "whitesource"""")
+      }
+      (whitesourceOrgToken in ThisBuild).?.value getOrElse(pass)
+    },
     whitesourceCheckPolicies :=
         new CheckPoliciesAction(
             whitesourceConfig.value,

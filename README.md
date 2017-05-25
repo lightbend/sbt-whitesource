@@ -18,33 +18,18 @@ Then add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you pref
 
     addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.0")
 
-Finally set `whitesourceOrgToken` with one of the following ways:
-
-1) Set it in sbt's `shell`:
-
-```
-set whitesourceOrgToken in ThisBuild := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
-
-2) Set it when starting sbt up:
-
-```
-sbt 'set whitesourceOrgToken in ThisBuild := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"' shell
-```
-
-3) Set it in `build.sbt`, for instance if in private sources:
+Next append to `credentials` in `~/.sbt/0.13/credentials.sbt`:
 
 ```scala
-whitesourceOrgToken in ThisBuild := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+credentials += Credentials(realm = "whitesource", host = "whitesourcesoftware.com",
+  userName = "", passwd = "********" /* Organization API Key */)
 ```
 
-4) Set it in a git ignored `local.sbt`:
+## usage
 
-```scala
-whitesourceOrgToken in ThisBuild := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
+Run `whitesourceUpdate` task to upload your projects' info to WhiteSource.
 
-## Details
+### Details
 
 This plugin is a port of [whitesource-maven-plugin][] to sbt, providing very similar options and features.
 
