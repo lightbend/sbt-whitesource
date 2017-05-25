@@ -79,20 +79,20 @@ object WhiteSourcePlugin extends AutoPlugin {
         "Should only be set to true if any internal (in-house) dependencies are used in the project " +
         "and In-House rules exist in your WhiteSource account.")
 
-    val whitesourceAggregateModules: SettingKey[Boolean] =
-      settingKey("If set to true all modules will be combined into a single WhiteSource project " +
+    val whitesourceAggregateSubprojects: SettingKey[Boolean] =
+      settingKey("If set to true all subprojects will be combined into a single WhiteSource project " +
         "with an aggregated dependency flat list (no hierarchy).")
 
     val whitesourceAggregateProjectName: SettingKey[String] =
       settingKey("The project name that will appear in WhiteSource. " +
         "If not explicitly set and no project token defined, defaults to the root project artifactId. " +
-        "Will only apply if `whitesourceAggregateModules` is set to true.")
+        "Will only apply if `whitesourceAggregateSubprojects` is set to true.")
 
     val whitesourceAggregateProjectToken: SettingKey[String] =
       settingKey("Unique identifier of the White Source project to update, " +
         "overrides `whitesourceAggregateProjectName`. " +
         "If omitted, default to the root project artifactId. " +
-        "Will only apply if `whitesourceAggregateModules` is set to true.")
+        "Will only apply if `whitesourceAggregateSubprojects` is set to true.")
 
     val whitesourceRequesterEmail: SettingKey[String] =
       settingKey("The provided email will be matched with an existing WhiteSource account. " +
@@ -168,7 +168,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceProduct.value,
     whitesourceProductVersion.value,
     target.value,
-    whitesourceAggregateModules.value,
+    whitesourceAggregateSubprojects.value,
     whitesourceAggregateProjectName.value,
     whitesourceAggregateProjectToken.value,
     whitesourceRequesterEmail.value,
