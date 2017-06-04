@@ -25,7 +25,7 @@ libraryDependencies += "org.whitesource" % "wss-agent-api"        % "2.3.3"
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % "2.3.3"
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % "2.3.3"
 
-bintrayOrganization := Some("typesafe")
-bintrayRepository   := "internal-ivy-releases"
+bintrayOrganization := Some("sbt")
+bintrayRepository   := "sbt-plugin-releases"
 
 cancelable in Global := true

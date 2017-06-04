@@ -15,7 +15,6 @@ First, ensure you have permission to read from Lightbend's private Bintray repos
 Then add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you prefer one file per plugin):
 
 ```scala
-resolvers += Resolver.bintrayIvyRepo("typesafe", "internal-ivy-releases")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.1")
 ```
 
@@ -35,7 +34,7 @@ whitesourceAggregateProjectName in ThisBuild  := "akka-2.5"
 whitesourceAggregateProjectToken in ThisBuild := "1234abc-******"
 ```
 
-## usage
+## Usage
 
 Run `whitesourceUpdate` task to upload your projects' info to WhiteSource.
 
