@@ -154,7 +154,7 @@ object WhiteSourcePlugin extends AutoPlugin {
         ).execute()
   )
 
-  private val thisProjectAggregates = ScopeFilter(inAggregates(ThisProject, includeRoot = false))
+  private val thisProjectAggregates = ScopeFilter(inAggregates(ThisProject, includeRoot = true))
 
   private val whitesourceConfig = Def task new Config(
     projectID.value,
