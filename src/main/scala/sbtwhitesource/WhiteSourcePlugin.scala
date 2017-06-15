@@ -1,5 +1,7 @@
 package sbtwhitesource
 
+import scala.util.Try
+
 import sbt._, Keys._
 
 import org.whitesource.agent.client.ClientConstants
@@ -135,7 +137,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceOrgToken := {
       val cs = credentials.value
       val log = streams.value.log
-      def pass = (Credentials.allDirect(cs) find { _.realm == "whitesource" }) match {
+      def pass = cs.flatMap(c => Try(Credentials.toDirect(c)).toOption) find { _.realm == "whitesource" } match {
         case Some(cred) => cred.passwd
         case None =>
           sys.error("""Whitesource credential is missing. Append to credentials key with realm "whitesource"""")
