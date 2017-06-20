@@ -155,10 +155,16 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     type GA = (String, String) // GA, as in GroupId and ArtifactID
     type ConfKey = String
 
-    def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] =
-      confReport.modules
+    def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] = {
+      implicit val orderingModuleReport = Ordering.by((mr: ModuleReport) => mr.toString)
+      confReport.modules.to[scala.collection.immutable.SortedSet].to[Seq]
           .groupBy(mr => (mr.module.organization, mr.module.name))
-          .map { case (k, Seq(v)) => k -> v }
+          .map {
+            case (k, Seq(v)) => k -> v
+            case (k, xs)     =>
+              sys error s"Multiple module reports for $k in ${confReport.configuration}\n\t${xs.mkString("\n\t")}"
+          }
+    }
 
     def moduleReports(config: String): Map[GA, ModuleReport] =
       updateReport.configuration(config) match {
