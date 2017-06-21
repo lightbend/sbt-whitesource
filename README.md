@@ -15,7 +15,7 @@ First, ensure you have permission to read from Lightbend's private Bintray repos
 Then add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you prefer one file per plugin):
 
 ```scala
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.3")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.4")
 ```
 
 Next append to `credentials` in `~/.sbt/0.13/credentials.sbt`:
