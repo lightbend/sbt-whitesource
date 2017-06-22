@@ -155,28 +155,22 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     type GA = (String, String) // GA, as in GroupId and ArtifactID
     type ConfKey = String
 
-    def moduleReportsByGA(confReport: ConfigurationReport): Map[GA, ModuleReport] = {
-      implicit val orderingModuleReport = Ordering.by((mr: ModuleReport) => mr.toString)
-      confReport.modules.to[scala.collection.immutable.SortedSet].to[Seq]
-          .groupBy(mr => (mr.module.organization, mr.module.name))
-          .map {
-            case (k, Seq(v)) => k -> v
-            case (k, xs)     =>
-              sys error s"Multiple module reports for $k in ${confReport.configuration}\n\t${xs.mkString("\n\t")}"
-          }
-    }
+    def moduleInfoByGA(confReport: ConfigurationReport): Map[GA, ModuleInfo] =
+      confReport.modules
+          .map(mr => ModuleInfo(mr.module.organization, mr.module.name, mr.module.revision, artifactAndJar(mr)))
+          .keyByAndMerge(mi => (mi.groupId, mi.artifactId), mergeModuleInfo)
 
-    def moduleReports(config: String): Map[GA, ModuleReport] =
+    def moduleInfos(config: String): Map[GA, ModuleInfo] =
       updateReport.configuration(config) match {
-        case Some(confReport) => moduleReportsByGA(confReport)
+        case Some(confReport) => moduleInfoByGA(confReport)
         case None             => Map.empty
       }
 
-    val  compileModuleReports = moduleReports("compile")
-    val  runtimeModuleReports = moduleReports("runtime")
-    val     testModuleReports = moduleReports("test")
-    val providedModuleReports = moduleReports("provided")
-    val optionalModuleReports = moduleReports("optional")
+    val  compileModuleInfos = moduleInfos("compile")
+    val  runtimeModuleInfos = moduleInfos("runtime")
+    val     testModuleInfos = moduleInfos("test")
+    val providedModuleInfos = moduleInfos("provided")
+    val optionalModuleInfos = moduleInfos("optional")
 
     def definedInConfigs(ga: GA): Vector[ConfKey] =
       updateReport.configurations.iterator
@@ -187,11 +181,11 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     def shouldIgnore(config: ConfKey) = ignoredScopes contains config
 
     def forGA(ga: GA): Option[DependencyInfo] = {
-      val isCompile  =  compileModuleReports get ga
-      val isRuntime  =  runtimeModuleReports get ga
-      val isTest     =     testModuleReports get ga
-      val isProvided = providedModuleReports get ga
-      val isOptional = optionalModuleReports get ga
+      val isCompile  =  compileModuleInfos get ga
+      val isRuntime  =  runtimeModuleInfos get ga
+      val isTest     =     testModuleInfos get ga
+      val isProvided = providedModuleInfos get ga
+      val isOptional = optionalModuleInfos get ga
 
       val optScopeAndMr = (isCompile, isRuntime, isTest, isProvided, isOptional) match {
         case (None, _, _, Some(mr), _) => Some((MavenScope.Provided, mr))
@@ -206,8 +200,8 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
           None
       }
 
-      optScopeAndMr filterNot (x => shouldIgnore(x._1.name)) map { case (scope, modReport) =>
-        getDependencyInfo(modReport, scope, isOptional.isDefined)
+      optScopeAndMr filterNot (x => shouldIgnore(x._1.name)) map { case (scope, moduleInfo) =>
+        getDependencyInfo(moduleInfo, scope, isOptional.isDefined)
       }
     }
 
@@ -226,21 +220,59 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     dependencyInfos
   }
 
-  private def getDependencyInfo(mr: ModuleReport, scope: MavenScope, optional: Boolean): DependencyInfo = {
+  sealed case class ModuleInfo(
+      groupId: String,
+      artifactId: String,
+      version: String,
+      artifactAndJar: Option[(Artifact, File)]
+  )
+
+  /* Under sbt-coursier it's possible to have multiple ModuleInfo for the same (groupId, artifactId),
+   * where there is no difference between them,
+   * or the difference is one has artifacts of type "jar" and the other of type "bundle".
+   *
+   * For this last case we 'upgrade' "jar" to "bundle".
+   */
+  private def mergeModuleInfo(m1: ModuleInfo, m2: ModuleInfo): Option[ModuleInfo] = {
+
+    def moduleInfoToTuple(m: ModuleInfo) = (m.groupId, m.artifactId, m.version)
+
+    def artifactToTuple(a: Artifact) =
+      (a.name, a.extension, a.classifier, a.configurations, a.url, a.extraAttributes)
+
+    if (moduleInfoToTuple(m1) != moduleInfoToTuple(m2)) None else {
+      (m1.artifactAndJar, m2.artifactAndJar) match {
+        case (None, Some(_))                  => None
+        case (Some(_), None)                  => None
+        case (None, None)                     => Some(m1)
+        case (Some((a1, f1)), Some((a2, f2))) =>
+          val artifactAndJar = if (f1 != f2 || artifactToTuple(a1) != artifactToTuple(a2)) None else {
+            val t1 = a1.`type`
+            val t2 = a2.`type`
+            val finalType = if (t1 == t2) Some(t1)
+            else if (Set(t1, t2) == Set("jar", "bundle")) Some("bundle")
+            else None
+            finalType map (tpe => a1.copy(`type` = tpe) -> f1)
+          }
+          artifactAndJar map (artifactAndJar => m1.copy(artifactAndJar = Some(artifactAndJar)))
+      }
+    }
+  }
+
+  private def getDependencyInfo(m: ModuleInfo, scope: MavenScope, optional: Boolean): DependencyInfo = {
     val info = new DependencyInfo()
-    info setGroupId mr.module.organization
-    info setArtifactId mr.module.name
-    info setVersion mr.module.revision
+    info setGroupId m.groupId
+    info setArtifactId m.artifactId
+    info setVersion m.version
     info setScope scope.name
     info setOptional optional
-    val artifactAndJar2 = artifactAndJar(mr)
-    info setClassifier artifactAndJar2.flatMap(_._1.classifier).orNull
-    info setType artifactAndJar2.map(_._1.`type`).orNull
+    info setClassifier m.artifactAndJar.flatMap(_._1.classifier).orNull
+    info setType m.artifactAndJar.map(_._1.`type`).orNull
     try {
-      info setSystemPath artifactAndJar2.map(_._2.getAbsolutePath).orNull
-      info setSha1 artifactAndJar2.map(ChecksumUtils calculateSHA1 _._2).orNull
+      info setSystemPath m.artifactAndJar.map(_._2.getAbsolutePath).orNull
+      info setSha1 m.artifactAndJar.map(ChecksumUtils calculateSHA1 _._2).orNull
     } catch {
-      case _: IOException => log debug s"Error calculating SHA-1 for ${mr.module}"
+      case _: IOException => log debug s"Error calculating SHA-1 for $m"
     }
     info setExclusions List.empty[ExclusionInfo].asJava
     info setChildren List.empty[DependencyInfo].asJava
