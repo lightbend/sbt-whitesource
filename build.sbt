@@ -10,9 +10,9 @@ organization := "com.lightbend"
     homepage := scmInfo.value map (_.browseUrl)
      scmInfo := Some(ScmInfo(url("https://github.com/lightbend/sbt-whitesource"), "scm:git:git@github.com:lightbend/sbt-whitesource.git"))
 
-       sbtPlugin := true
-      sbtVersion := "0.13.16"
-crossSbtVersions := List("0.13.16", "1.0.0-RC3")
+       sbtPlugin           := true
+      sbtVersion in Global := "0.13.16" // must be Global, otherwise ^^ won't change anything
+crossSbtVersions           := List("0.13.16", "1.0.0-RC3")
 
 scalaVersion := "2.10.6"
 scalaVersion := (CrossVersion partialVersion (sbtVersion in pluginCrossBuild).value match {
