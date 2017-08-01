@@ -10,8 +10,16 @@ organization := "com.lightbend"
     homepage := scmInfo.value map (_.browseUrl)
      scmInfo := Some(ScmInfo(url("https://github.com/lightbend/sbt-whitesource"), "scm:git:git@github.com:lightbend/sbt-whitesource.git"))
 
-   sbtPlugin := true
+       sbtPlugin := true
+      sbtVersion := "0.13.16"
+crossSbtVersions := List("0.13.16", "1.0.0-RC3")
+
 scalaVersion := "2.10.6"
+scalaVersion := (CrossVersion partialVersion (sbtVersion in pluginCrossBuild).value match {
+  case Some((0, 13)) => "2.10.6"
+  case Some((1, _))  => "2.12.3"
+  case _             => sys error s"Unhandled sbt version ${(sbtVersion in pluginCrossBuild).value}"
+})
 
 scalacOptions ++= Seq("-encoding", "utf8")
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint")
