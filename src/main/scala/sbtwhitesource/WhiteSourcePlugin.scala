@@ -136,7 +136,6 @@ object WhiteSourcePlugin extends AutoPlugin {
   override def projectSettings = Seq(
     whitesourceOrgToken := {
       val cs = credentials.value
-      val log = streams.value.log
       def pass = cs.flatMap(c => Try(Credentials.toDirect(c)).toOption) find { _.realm == "whitesource" } match {
         case Some(cred) => cred.passwd
         case None =>
