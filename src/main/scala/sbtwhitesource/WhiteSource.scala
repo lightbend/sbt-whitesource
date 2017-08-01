@@ -9,7 +9,8 @@ import org.whitesource.agent.report._
 
 import scala.collection.JavaConverters._
 
-import sbt._
+import sbt._, compat._
+import sbt.librarymanagement.ConfigRef
 
 final class Config(
     val projectID: ModuleID,
@@ -153,7 +154,6 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
   private def collectDependencyStructure(c: ProjectConfig): Vector[DependencyInfo] = {
     import c._
     type GA = (String, String) // GA, as in GroupId and ArtifactID
-    type ConfKey = String
 
     def moduleInfoByGA(confReport: ConfigurationReport): Map[GA, ModuleInfo] =
       confReport.modules
@@ -161,7 +161,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
           .keyByAndMerge(mi => (mi.groupId, mi.artifactId), mergeModuleInfo)
 
     def moduleInfos(config: String): Map[GA, ModuleInfo] =
-      updateReport.configuration(config) match {
+      updateReport.configuration(ConfigRef(config)) match {
         case Some(confReport) => moduleInfoByGA(confReport)
         case None             => Map.empty
       }
@@ -172,13 +172,13 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     val providedModuleInfos = moduleInfos("provided")
     val optionalModuleInfos = moduleInfos("optional")
 
-    def definedInConfigs(ga: GA): Vector[ConfKey] =
+    def definedInConfigs(ga: GA): Vector[ConfigRef] =
       updateReport.configurations.iterator
           .filter(_.modules exists (mr => mr.module.organization == ga._1 && mr.module.name == ga._2))
-          .map(_.configuration)
+          .map(ConfigRef wrap _.configuration)
           .toVector
 
-    def shouldIgnore(config: ConfKey) = ignoredScopes contains config
+    def shouldIgnore(config: ConfigRef) = ignoredScopes contains config.name
 
     def forGA(ga: GA): Option[DependencyInfo] = {
       val isCompile  =  compileModuleInfos get ga
@@ -200,7 +200,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
           None
       }
 
-      optScopeAndMr filterNot (x => shouldIgnore(x._1.name)) map { case (scope, moduleInfo) =>
+      optScopeAndMr filterNot (x => shouldIgnore(x._1.configRef)) map { case (scope, moduleInfo) =>
         getDependencyInfo(moduleInfo, scope, isOptional.isDefined)
       }
     }
@@ -252,7 +252,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
             val finalType = if (t1 == t2) Some(t1)
             else if (Set(t1, t2) == Set("jar", "bundle")) Some("bundle")
             else None
-            finalType map (tpe => a1.copy(`type` = tpe) -> f1)
+            finalType map (tpe => a1.withType(tpe) -> f1)
           }
           artifactAndJar map (artifactAndJar => m1.copy(artifactAndJar = Some(artifactAndJar)))
       }
@@ -427,6 +427,7 @@ private sealed trait MavenScope {
     case MavenScope.Test     => "test"
     case MavenScope.Provided => "provided"
   }
+  def configRef: ConfigRef = ConfigRef(name)
 }
 private object MavenScope {
   case object Compile  extends MavenScope
