@@ -386,14 +386,14 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
       }
       log info "Sending Update Request to WhiteSource"
       val updateResult = service.update(orgToken, requesterEmail, product, productVersion, projectInfos.asJava)
-      logResult(updateResult, log)
+      reportUpdateResult(updateResult, log)
     } catch {
       case e: WssServiceException =>
         throw WhiteSourceException(s"Error communicating with service: ${e.getMessage}", e)
     }
   }
 
-  private def logResult(result: UpdateInventoryResult, log: Logger): Unit = {
+  private def reportUpdateResult(result: UpdateInventoryResult, log: Logger): Unit = {
     log info ""
     log info "------------------------------------------------------------------------"
     log info s"Inventory Update Result for ${result.getOrganization}"
@@ -417,6 +417,9 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
         log.info("* " + projectName)
     }
     log.info("")
+
+    if (createdProjects.isEmpty && updatedProjects.isEmpty)
+      throw WhiteSourceException(s"Failed to update (or create) any projects. Please check whether there is a project '$aggregateProjectName' under product '$product'")
   }
 }
 
