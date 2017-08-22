@@ -14,7 +14,6 @@ organization := "com.lightbend"
       sbtVersion in Global := "0.13.16" // must be Global, otherwise ^^ won't change anything
 crossSbtVersions           := List("0.13.16", "1.0.0-RC3")
 
-scalaVersion := "2.10.6"
 scalaVersion := (CrossVersion partialVersion (sbtVersion in pluginCrossBuild).value match {
   case Some((0, 13)) => "2.10.6"
   case Some((1, _))  => "2.12.3"
@@ -29,6 +28,11 @@ scalacOptions  += "-Ywarn-dead-code"
 scalacOptions  += "-Ywarn-numeric-widen"
 scalacOptions  += "-Ywarn-value-discard"
 
+libraryDependencies += Defaults.sbtPluginExtra(
+  "com.dwijnand" % "sbt-compat" % "1.0.0",
+  (sbtBinaryVersion in pluginCrossBuild).value,
+  (scalaBinaryVersion in update).value
+)
 libraryDependencies += "org.whitesource" % "wss-agent-api"        % "2.3.3"
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % "2.3.3"
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % "2.3.3"
