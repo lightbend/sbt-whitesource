@@ -1,16 +1,20 @@
 package sbtwhitesource
 
-import java.io.{ File, IOException }
+import java.io.{File, IOException}
 import java.net.URI
 
-import org.whitesource.agent.api._, dispatch._, model._
+import org.whitesource.agent.api._
+import dispatch._
+import model._
 import org.whitesource.agent.client._
 import org.whitesource.agent.report._
 
 import scala.collection.JavaConverters._
-
+import sbt._
 import sbt._, compat._
 import sbt.librarymanagement.ConfigRef
+
+import scala.annotation.tailrec
 
 final class Config(
     val projectID: ModuleID,
@@ -309,6 +313,36 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
   private def extractChildren(dependency: DependencyInfo): Vector[DependencyInfo] =
     dependency.getChildren.asScala.flatMap(child => child +: extractChildren(child)).toVector
 
+  protected def formatRejections(result: CheckPolicyComplianceResult) = {
+    (result.getExistingProjects.asScala ++ result.getNewProjects.asScala)
+      .mapValues(dependencyGraph => rejections(dependencyGraph))
+      .flatMap {
+        case (_, List()) =>
+          None
+        case (projectName, rejections) =>
+          Some(s"$projectName:\n" +
+            rejections
+              .map { case (resourceName, rejectedPolicy) => s"* $resourceName (rejected by policy '$rejectedPolicy')"}
+              .mkString("\n"))
+      }
+      .mkString
+  }
+
+  object Policy {
+    def unapply(requestPolicyInfo: RequestPolicyInfo): Option[(String, String)] = {
+      if (requestPolicyInfo != null) Some((requestPolicyInfo.getDisplayName, requestPolicyInfo.getActionType))
+      else None
+    }
+  }
+
+  private def rejections(dependencyGraph: PolicyCheckResourceNode): List[(String, String)] = {
+    val childRejections = dependencyGraph.getChildren.asScala.flatMap(rejections).toList
+    dependencyGraph.getPolicy match {
+      case Policy(name, "Reject") => (dependencyGraph.getResource.getDisplayName, name) +: childRejections
+      case _ => childRejections
+    }
+  }
+
   private def handleError(e: Exception) = {
     val msg = e.getMessage
     val msg2 = if (msg eq null) "" else msg
@@ -343,8 +377,8 @@ final class CheckPoliciesAction(config: Config, childConfigs: Vector[ProjectConf
 
       generateReport(result)
 
-      if (result.hasRejections())
-        throw WhiteSourceException("Some dependencies were rejected by the organization's policies.")
+      if (result.hasRejections)
+        throw WhiteSourceException("Some dependencies were rejected by the organization's policies:\n" + formatRejections(result))
       else
         log info "All dependencies conform with the organization's policies."
     } catch {
@@ -352,6 +386,7 @@ final class CheckPoliciesAction(config: Config, childConfigs: Vector[ProjectConf
         throw WhiteSourceException(s"Error communicating with service: ${e.getMessage}", e)
     }
   }
+
 }
 
 final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) extends BaseAction(config, childConfigs) {
@@ -376,7 +411,7 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
 
         val hasRejections = result.hasRejections
         if (hasRejections && !forceUpdate)
-          throw WhiteSourceException("Some dependencies were rejected by the organization's policies.")
+          throw WhiteSourceException("Some dependencies were rejected by the organization's policies:\n" + formatRejections(result))
         else {
           val conformMsg = "All dependencies conform with open source policies."
           val violateMsg = "Some dependencies violate open source policies, " +
