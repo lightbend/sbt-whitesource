@@ -59,3 +59,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+## Maintenance
+
+This project is active, it's not supported by [Lightbend's subscription](https://www.lightbend.com/subscription), and it's maintained by the [Tooling Team](https://github.com/orgs/lightbend/teams/tooling-team) at Lightbend.
