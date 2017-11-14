@@ -14,8 +14,6 @@ import sbt._
 import sbt._, compat._
 import sbt.librarymanagement.ConfigRef
 
-import scala.annotation.tailrec
-
 final class Config(
     val projectID: ModuleID,
     val skip: Boolean,
@@ -370,7 +368,7 @@ final class CheckPoliciesAction(config: Config, childConfigs: Vector[ProjectConf
 
   private def sendCheckPolicies(service: WhitesourceService, projectInfos: Vector[AgentProjectInfo]) = {
     try {
-      log info "Checking Policies"
+      log info s"Checking Policies for project $aggregateProjectName in product $product"
 
       val result = service.checkPolicyCompliance(
         orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
@@ -403,7 +401,7 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
   private def sendUpdate(service: WhitesourceService, projectInfos: Vector[AgentProjectInfo]) = {
     try {
       if (checkPolicies) {
-        log info "Checking Policies"
+        log info s"Checking Policies for project $aggregateProjectName in product $product"
         val result = service.checkPolicyCompliance(
           orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
 
