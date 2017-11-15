@@ -10,23 +10,22 @@ an [external update agent][whitesource/agents] for sbt.
 
 ## Setup
 
-First, ensure you have permission to read from Lightbend's private Bintray repositories.
-
-Then add this to `project/plugins.sbt` (or `project/whitesource.sbt` if you prefer one file per plugin):
+1. Add the sbt plugin to `project/plugins.sbt`, like so:
 
 ```scala
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.6")
 ```
 
-Next append to `credentials` in `~/.sbt/0.13/credentials.sbt`:
+[ws-Integrate]: https://saas.whitesourcesoftware.com/Wss/WSS.html#!adminOrganization_integration
+
+2. Set the Organization API Key (from WhiteSource's [Integrate][ws-Integrate] page) by appending to `credentials` in `~/.sbt/0.13/credentials.sbt`, like so:
 
 ```scala
 credentials += Credentials(realm = "whitesource", host = "whitesourcesoftware.com",
   userName = "", passwd = "********" /* Organization API Key */)
 ```
 
-Finally in your `build.sbt` set the product name and the aggregate project name and token.
-The project tokens are available from the [Integrate](https://saas.whitesourcesoftware.com/Wss/WSS.html#!adminOrganization_integration) page:
+3. In your `build.sbt` set the product name and the aggregate project name and token, also available from WhiteSource's [Integrate][ws-Integrate] page:
 
 ```scala
 whitesourceProduct in ThisBuild               := "Lightbend Reactive Platform"
