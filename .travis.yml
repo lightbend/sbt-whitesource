@@ -5,7 +5,7 @@ script: sbt ^^$TRAVIS_SBT_VERSION test
 env:
   matrix:
     - TRAVIS_SBT_VERSION=0.13.16
-    - TRAVIS_SBT_VERSION=1.0.0-RC3
+    - TRAVIS_SBT_VERSION=1.0.0
 
 cache:
   directories:

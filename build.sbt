@@ -11,7 +11,7 @@ organization := "com.lightbend"
 
        sbtPlugin           := true
       sbtVersion in Global := "0.13.16" // must be Global, otherwise ^^ won't change anything
-crossSbtVersions           := List("0.13.16", "1.0.0-RC3")
+crossSbtVersions           := List("0.13.16", "1.0.0")
 
 scalaVersion := (CrossVersion partialVersion (sbtVersion in pluginCrossBuild).value match {
   case Some((0, 13)) => "2.10.6"
