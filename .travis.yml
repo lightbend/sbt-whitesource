@@ -1,11 +1,20 @@
 language: scala
 jdk: oraclejdk8
-script: sbt ^^$TRAVIS_SBT_VERSION test
+script: project/travis.sh
+
+# Build only master and version tags - http://stackoverflow.com/a/31882307/463761
+branches:
+  only:
+  - master
+  - /^v[0-9]/
 
 env:
+  global:
+    - secure: XkKFwkyLaKMO3HqQD6L46T6tIFVybRr0ImjArbbgJkpwSJfpgHVSMTHs9lhECkieLL1lqHc1UCbV13ijrmD6xYTrS7AAdXpimOoHdv57L3oTMA8Tnpu8rXPA++rUB4DOaICKJ42413cV+jafagkJf2R0Dwe1ajnwNw7H8LseW9zhC2H+xGgFEEjf1XVJHIe3FR9PWxLPetTNwrFurguDmKG7/OoaYt8YrK1dHA+luC9WzCOUTUP1gD4nB3+VOvV6sK4DzfuoZcH9z2whAdQK8PQTqbRptSEDol1mJzUoKWS8F3+gqA87D4Dff6Si8+K6lm39McYGsFWPtv87NiCYvAI5kqx+iqUld0YqXCLR3Vi4Cf/iMh8auYllFGwnizdD384+Ff+BYxS9tmG9F2NTwXVxmByufm2jweoNkGdreBos0sDS4SwBC0maXdqKKk9kOXYRLYqEQrnxfszBBO+/KuyO0dBANA6MEssbggfiuZQtZoJqkQGluyK4b3rdPGnMsxy5DbDiElHFB2Hsk8UR5cy6t6UiMdwRSTdiTUF0MXSXhEZ21QAHTlUkruiU4Yuc3LA9ZeU/w0bef/pYpgz+SW5/u0ERu7JT1QS4mclHaq+RY2SJ4BA2tvo0/62N24yqTqd/LyZE5uirb6UOPS7YJ9dpftwTcEwDlegy9Yj6+AQ=
+    - secure: WFomH+SP4qlzpMZ4gGxGqbKaw+SI/DKsBFObXP2tg2E5Ba2lMPKtA9zwJILrFhfmhLRqtg/WgU3IH6gqGIAOnP04516JSValzcNNf4tbIJVucoEzM6WlbW5bsRceODf8w1uloF9487j90haCA7znDHwW4dp52KBDZuubloB11zEpx0ALkTp1bfDui5D67WfYue8FYej/fgmaP5kT2ldnjVupz4cEUPJGbdw07E6MjQl7I3RXuvzNjyk7+Hl1hBHO3ojVVuHYGvz9JfUcK+qxlwjFCrmrnGZEMZ+WGMCubNNt41bUIjZKyyAHXBFNBBHmatuyQQTRwww4Nbe4J1TiU/rz6P6WC7gHm88nB9BER3QJiRFbiEPztm09nH+XY0bNNnyk4TrsXTvpg0RIEbL1dwb3bKk9faQbJYaP/SsitTG1W/WqOWBRiDM642h/j9lgbYD+Ehv1fmxDt+SHjVHLi4/S2hBNeLM7CRceJDy2bG3Lvz/2VFmXlrmqiPwlLm+R+KlV4jDDDqBjprqJ5PF7oEYAGBQ41umk9M3pIZytBgu6jlzUaoA/fe+PXew/bmjWI2ypJIMUNJUDTZuDf7BT0Bt2Uly9mOD7E2fRKtU3M6rmevxfI3kdyacVLYASfmLDfobvJ/qCt7FHuO4VEDZgB+7GNkygkFV88MLkS6kAMX8=
   matrix:
-    - TRAVIS_SBT_VERSION=0.13.16
-    - TRAVIS_SBT_VERSION=1.0.0-RC3
+    - TRAVIS_SBT_VERSION=0.13.x
+    - TRAVIS_SBT_VERSION=1.x
 
 cache:
   directories:

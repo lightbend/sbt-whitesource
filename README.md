@@ -1,6 +1,8 @@
-# [sbt-whitesource][]
+# [sbt-whitesource][] [![travis-badge][]][travis]
 
-[sbt-whitesource]: https://github.com/typesafehub/sbt-whitesource
+[sbt-whitesource]: https://github.com/lightbend/sbt-whitesource
+[travis]:       https://travis-ci.org/lightbend/sbt-whitesource
+[travis-badge]: https://travis-ci.org/lightbend/sbt-whitesource.svg?branch=master
 
 `sbt-whitesource` is an [sbt][] plugin to keep your WhiteSource project up to date. In WhiteSource terms it is
 an [external update agent][whitesource/agents] for sbt.
