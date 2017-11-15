@@ -1,16 +1,14 @@
 package sbtwhitesource
 
-import java.io.{File, IOException}
+import java.io.{ File, IOException }
 import java.net.URI
 
-import org.whitesource.agent.api._
-import dispatch._
-import model._
+import org.whitesource.agent.api._, dispatch._, model._
 import org.whitesource.agent.client._
 import org.whitesource.agent.report._
 
 import scala.collection.JavaConverters._
-import sbt._
+
 import sbt._, compat._
 import sbt.librarymanagement.ConfigRef
 
@@ -311,7 +309,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
   private def extractChildren(dependency: DependencyInfo): Vector[DependencyInfo] =
     dependency.getChildren.asScala.flatMap(child => child +: extractChildren(child)).toVector
 
-  protected def formatRejections(result: CheckPolicyComplianceResult) = {
+  final protected def formatRejections(result: CheckPolicyComplianceResult) = {
     (result.getExistingProjects.asScala ++ result.getNewProjects.asScala)
       .mapValues(dependencyGraph => rejections(dependencyGraph))
       .flatMap {
@@ -384,7 +382,6 @@ final class CheckPoliciesAction(config: Config, childConfigs: Vector[ProjectConf
         throw WhiteSourceException(s"Error communicating with service: ${e.getMessage}", e)
     }
   }
-
 }
 
 final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) extends BaseAction(config, childConfigs) {
