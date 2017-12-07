@@ -32,9 +32,13 @@ libraryDependencies += Defaults.sbtPluginExtra(
   (sbtBinaryVersion in pluginCrossBuild).value,
   (scalaBinaryVersion in update).value
 )
-libraryDependencies += "org.whitesource" % "wss-agent-api"        % "2.3.3"
-libraryDependencies += "org.whitesource" % "wss-agent-api-client" % "2.3.3"
-libraryDependencies += "org.whitesource" % "wss-agent-report"     % "2.3.3"
+
+val whitesourceVersion = "2.4.9"
+
+libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceVersion
+// Exclude pecoff library which is not on maven central and used only for .Net
+libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion exclude("org.boris", "pecoff4j")
+libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion
 
 bintrayOrganization := Some("sbt")
 bintrayRepository   := "sbt-plugin-releases"

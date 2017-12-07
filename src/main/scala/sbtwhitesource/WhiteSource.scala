@@ -5,6 +5,7 @@ import java.net.URI
 
 import org.whitesource.agent.api._, dispatch._, model._
 import org.whitesource.agent.client._
+import org.whitesource.agent.hash.ChecksumUtils
 import org.whitesource.agent.report._
 
 import scala.collection.JavaConverters._
@@ -55,7 +56,7 @@ final case class WhiteSourceException(message: String = null, cause: Exception =
 
 sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectConfig]) {
   val agentType: String    = "maven-plugin"     // TODO: use "sbt-plugin" or "sbt-whitesource"
-  val agentVersion: String = "2.3.5" // "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
+  val agentVersion: String = "2.4.9" // "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
   import config._
 
   final def execute(): Unit = {
