@@ -40,6 +40,16 @@ libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceV
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion exclude("org.boris", "pecoff4j")
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion
 
+mimaPreviousArtifacts := Set {
+  val m = organization.value %% moduleName.value % "0.1.7"
+  val sbtBinV = (sbtBinaryVersion in pluginCrossBuild).value
+  val scalaBinV = (scalaBinaryVersion in update).value
+  if (sbtPlugin.value)
+    Defaults.sbtPluginExtra(m cross CrossVersion.Disabled, sbtBinV, scalaBinV)
+  else
+    m
+}
+
 bintrayOrganization := Some("sbt")
 bintrayRepository   := "sbt-plugin-releases"
 
