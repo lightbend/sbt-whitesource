@@ -16,4 +16,4 @@ if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then
   fi
 fi
 
-sbt "$SWITCH_SBT_VERSION" test "$PUBLISH"
+sbt "$SWITCH_SBT_VERSION" test mimaReportBinaryIssues "$PUBLISH"
