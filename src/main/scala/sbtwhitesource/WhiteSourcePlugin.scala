@@ -136,12 +136,15 @@ object WhiteSourcePlugin extends AutoPlugin {
   override def projectSettings = Seq(
     whitesourceOrgToken := {
       val cs = credentials.value
+      val log = state.value.log
       def pass = cs.flatMap(c => Try(Credentials.toDirect(c)).toOption) find { _.realm == "whitesource" } match {
         case Some(cred) => cred.passwd
         case None =>
-          sys.error("""Whitesource credential is missing. Append to credentials key with realm "whitesource"""")
+          val msg = """Whitesource credential is missing. Append to credentials key with realm "whitesource""""
+          if (whitesourceFailOnError.value) sys.error(msg) else log.debug(msg)
+          ""
       }
-      (whitesourceOrgToken in ThisBuild).?.value getOrElse(pass)
+      (whitesourceOrgToken in ThisBuild).?.value getOrElse pass
     },
     whitesourceCheckPolicies :=
         new CheckPoliciesAction(
