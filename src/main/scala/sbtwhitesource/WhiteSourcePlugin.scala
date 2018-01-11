@@ -144,7 +144,7 @@ object WhiteSourcePlugin extends AutoPlugin {
           if (whitesourceFailOnError.value) sys.error(msg) else log.debug(msg)
           ""
       }
-      (whitesourceOrgToken in ThisBuild).?.value getOrElse pass
+      (whitesourceOrgToken in ThisBuild).?.value orElse sys.env.get("WHITESOURCE_PASSWORD") getOrElse pass
     },
     whitesourceCheckPolicies :=
         new CheckPoliciesAction(
