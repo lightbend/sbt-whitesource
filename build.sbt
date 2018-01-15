@@ -38,7 +38,7 @@ val whitesourceVersion = "2.4.9"
 libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceVersion
 // Exclude pecoff library which is not on maven central and used only for .Net
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion exclude("org.boris", "pecoff4j")
-libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion
+libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion exclude("org.boris", "pecoff4j")
 
 mimaPreviousArtifacts := Set {
   val m = organization.value %% moduleName.value % "0.1.7"
