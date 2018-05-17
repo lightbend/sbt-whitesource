@@ -33,7 +33,7 @@ libraryDependencies += Defaults.sbtPluginExtra(
   (scalaBinaryVersion in update).value
 )
 
-val whitesourceVersion = "2.4.9"
+val whitesourceVersion = "2.6.9"
 
 libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceVersion
 // Exclude pecoff library which is not on maven central and used only for .Net
