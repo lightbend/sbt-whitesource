@@ -36,7 +36,6 @@ libraryDependencies += Defaults.sbtPluginExtra(
 val whitesourceVersion = "2.6.9"
 
 libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceVersion
-// Exclude pecoff library which is not on maven central and used only for .Net
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion
 
