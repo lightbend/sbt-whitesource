@@ -41,11 +41,30 @@ whitesourceAggregateProjectToken in ThisBuild := "1234abc-******"
 
 Run `whitesourceUpdate` task to upload your projects' info to WhiteSource.
 
-### Details
+## Configuration
 
 This plugin is a port of [whitesource-maven-plugin][] to sbt, providing very similar options and features.
 
 [whitesource-maven-plugin]: https://github.com/whitesource/maven-plugin
+
+### Interesting keys
+
+The following keys might be of particular interest:
+
+* `whitesourceServiceUrl in ThisBuild`: Specifies the WhiteSource Service URL (or IP) to use, for on-premise installations
+
+## Debugging
+
+As the whitesource library relies on the Apache `httpclient` its logging can be configured as described here:
+https://hc.apache.org/httpcomponents-client-ga/logging.html
+
+For instance passing these options to sbt shows the requests and responses:
+
+```
+-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog
+-Dorg.apache.commons.logging.simplelog.showdatetime=true
+-Dorg.apache.commons.logging.simplelog.log.org.apache.http=DEBUG
+```
 
 ## Licence
 
