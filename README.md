@@ -43,7 +43,7 @@ Run `whitesourceUpdate` task to upload your projects' info to WhiteSource.
 
 ## Configuration
 
-This plugin is a port of [whitesource-maven-plugin][] to sbt, providing very similar options and features.
+This plugin is a port of [whitesource-maven-plugin][] v3.2.4 to sbt, providing very similar options and features.
 
 [whitesource-maven-plugin]: https://github.com/whitesource/maven-plugin
 

@@ -39,7 +39,6 @@ final class ProjectConfig(
     val onlyDirectDependencies: Boolean,
     val libraryDependencies: Seq[ModuleID],
     val updateReport: UpdateReport,
-    val ignoreTestScopeDependencies: Boolean,
     val projectToken: String,
     val ignore: Boolean,
     val includes: Vector[String],
