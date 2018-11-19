@@ -60,6 +60,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     val whitesourceIgnore: SettingKey[Boolean] =
       settingKey("If set to true this module will be ignored. Overrides any include patterns.")
 
+    @deprecated("Not used", "0.1.13")
     val whitesourceIgnoreTestScopeDependencies: SettingKey[Boolean] =
       settingKey("If set to false test scope dependencies are included.")
 
@@ -186,7 +187,6 @@ object WhiteSourcePlugin extends AutoPlugin {
     whitesourceOnlyDirectDependencies.value,
     libraryDependencies.value,
     update.value,
-    whitesourceIgnoreTestScopeDependencies.value,
     whitesourceProjectToken.value,
     whitesourceIgnore.value,
     whitesourceIncludes.value,
