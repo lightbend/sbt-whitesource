@@ -49,6 +49,12 @@ mimaPreviousArtifacts := Set {
     m
 }
 
+import com.typesafe.tools.mima.core._
+mimaBinaryIssueFilters ++= Seq(
+  // ProjectConfig is internal API (it has no key)
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.ProjectConfig.*")
+)
+
 bintrayOrganization := Some("sbt")
 bintrayRepository   := "sbt-plugin-releases"
 
