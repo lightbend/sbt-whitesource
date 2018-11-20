@@ -10,7 +10,7 @@ organization := "com.lightbend"
      scmInfo := Some(ScmInfo(url("https://github.com/lightbend/sbt-whitesource"), "scm:git:git@github.com:lightbend/sbt-whitesource.git"))
 
        sbtPlugin           := true
-      sbtVersion in Global := "0.13.16" // must be Global, otherwise ^^ won't change anything
+      sbtVersion in Global := "1.0.0" // must be Global, otherwise ^^ won't change anything
 crossSbtVersions           := List("0.13.16", "1.0.0")
 
 scalaVersion := (CrossVersion partialVersion (sbtVersion in pluginCrossBuild).value match {
@@ -44,7 +44,7 @@ mimaPreviousArtifacts := Set {
   val sbtBinV = (sbtBinaryVersion in pluginCrossBuild).value
   val scalaBinV = (scalaBinaryVersion in update).value
   if (sbtPlugin.value)
-    Defaults.sbtPluginExtra(m cross CrossVersion.Disabled, sbtBinV, scalaBinV)
+    Defaults.sbtPluginExtra(m cross CrossVersion.Disabled(), sbtBinV, scalaBinV)
   else
     m
 }
