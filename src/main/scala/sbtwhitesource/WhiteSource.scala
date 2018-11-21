@@ -196,7 +196,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
         case _                         =>
           val configs = definedInConfigs(ga) filterNot shouldIgnore
           if (configs.nonEmpty)
-            log warn s"Ignoring dependency $ga which is defined in config(s) $configs"
+            log warn s"Ignoring dependency $ga defined in ivy config(s) $configs because it doesn't map to any of Maven's scopes"
           None
       }
 
