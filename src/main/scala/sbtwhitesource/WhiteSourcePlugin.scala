@@ -188,7 +188,7 @@ object WhiteSourcePlugin extends AutoPlugin {
     libraryDependencies.value,
     update.value,
     whitesourceProjectToken.value,
-    whitesourceIgnore.value,
+    whitesourceIgnore.value || (skip in publish).value,
     whitesourceIncludes.value,
     whitesourceExcludes.value,
     whitesourceIgnoredScopes.value
