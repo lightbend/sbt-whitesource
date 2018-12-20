@@ -1,3 +1,2 @@
-Update the README.md to point to the newly released version
-Tag the commit
-Travis should publish (see project/travis.sh)
+* Update the README.md to point to the newly released version
+* Tag the commit. Now travis should publish automatically (see project/travis.sh)
