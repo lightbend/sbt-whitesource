@@ -33,7 +33,7 @@ libraryDependencies += Defaults.sbtPluginExtra(
   (scalaBinaryVersion in update).value
 )
 
-val whitesourceVersion = "2.7.9"
+val whitesourceVersion = "2.9.9.02"
 
 libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceVersion
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion
