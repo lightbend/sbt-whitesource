@@ -66,6 +66,8 @@ For instance passing these options to sbt shows the requests and responses:
 -Dorg.apache.commons.logging.simplelog.log.org.apache.http=DEBUG
 ```
 
+To view the diff payload, it needs to be urldecoded, base64-decoded and then un-gzipped.
+
 ## Licence
 
 Copyright 2017 Lightbend, Inc.
