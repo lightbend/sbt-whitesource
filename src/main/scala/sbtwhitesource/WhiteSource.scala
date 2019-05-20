@@ -238,7 +238,7 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
     def moduleInfoToTuple(m: ModuleInfo) = (m.groupId, m.artifactId, m.version)
 
     def artifactToTuple(a: Artifact) =
-      (a.name, a.extension, a.classifier, a.configurations, a.url, a.extraAttributes)
+      (a.name, a.extension, a.configurations, a.url, a.extraAttributes)
 
     if (moduleInfoToTuple(m1) != moduleInfoToTuple(m2)) None else {
       (m1.artifactAndJar, m2.artifactAndJar) match {
@@ -246,13 +246,21 @@ sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectCon
         case (Some(_), None)                  => None
         case (None, None)                     => Some(m1)
         case (Some((a1, f1)), Some((a2, f2))) =>
-          val artifactAndJar = if (f1 != f2 || artifactToTuple(a1) != artifactToTuple(a2)) None else {
-            val t1 = a1.`type`
-            val t2 = a2.`type`
-            val finalType = if (t1 == t2) Some(t1)
-            else if (Set(t1, t2) == Set("jar", "bundle")) Some("bundle")
-            else None
-            finalType map (tpe => a1.withType(tpe) -> f1)
+          val artifactAndJar = if (artifactToTuple(a1) != artifactToTuple(a2)) None else {
+            val mergedType = Set(a1.`type`, a2.`type`).toSeq.sorted match {
+              case Seq(t1)              => Some(t1)
+              case Seq("bundle", "jar") => Some("bundle") // 'upgrade' "jar" to "bundle"
+              case _                    => None
+            }
+            val mergedClassifierAndFile = Set((a1.classifier, f1), (a2.classifier, f2)).toSeq.sorted match {
+              case Seq(x)                                  => Some(x)
+              case Seq(x @ (None, _), (Some("native"), _)) => Some(x) // discard "native" classifier
+              case _                                       => None
+            }
+            for {
+              tpe <- mergedType
+              (classifier, file) <- mergedClassifierAndFile
+            } yield a1.withType(tpe).withClassifier(classifier) -> file
           }
           artifactAndJar map (artifactAndJar => m1.copy(artifactAndJar = Some(artifactAndJar)))
       }
