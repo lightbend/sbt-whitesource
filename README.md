@@ -27,7 +27,7 @@ credentials += Credentials(realm = "whitesource", host = "whitesourcesoftware.co
   userName = "", passwd = "********" /* Organization API Key */)
 ```
 
-Note: on Jenkins you can inject that file, while on Travis CI you'd have to use its [Environment Variables](https://docs.travis-ci.com/user/environment-variables/) feature.
+Or set the `WHITESOURCE_PASSWORD` environment variable. On Travis CI, use its [Encrypted Environment Variables](https://docs.travis-ci.com/user/environment-variables#defining-encrypted-variables-in-travisyml) feature.
 
 3. In your `build.sbt` set the product name and the aggregate project name and token, also available from WhiteSource's [Integrate][ws-Integrate] page:
 
