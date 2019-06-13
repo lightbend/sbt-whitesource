@@ -39,6 +39,8 @@ libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceV
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
+
 mimaPreviousArtifacts := Set {
   val m = organization.value %% moduleName.value % "0.1.7"
   val sbtBinV = (sbtBinaryVersion in pluginCrossBuild).value
