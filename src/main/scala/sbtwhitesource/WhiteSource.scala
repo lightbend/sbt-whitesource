@@ -332,32 +332,22 @@ object BaseAction {
   private[sbtwhitesource] def mergeModuleInfo(m1: ModuleInfo, m2: ModuleInfo): Option[ModuleInfo] = {
     def moduleInfoToTuple(m: ModuleInfo) = (m.groupId, m.artifactId, m.version)
 
-    def artifactToTuple(a: Artifact) =
-      (a.name, a.extension, a.configurations, a.extraAttributes)
-
     if (moduleInfoToTuple(m1) != moduleInfoToTuple(m2)) None else {
       (m1.artifactAndJar, m2.artifactAndJar) match {
         case (None, Some(_))                  => None
         case (Some(_), None)                  => None
         case (None, None)                     => Some(m1)
         case (Some((a1, f1)), Some((a2, f2))) =>
-          val artifactAndJar = if (artifactToTuple(a1) != artifactToTuple(a2)) None else {
-            val mergedType = Set(a1.`type`, a2.`type`).toSeq.sorted match {
-              case Seq(t1)              => Some(t1)
-              case Seq("bundle", "jar") => Some("bundle") // 'upgrade' "jar" to "bundle"
-              case _                    => None
-            }
-            val mergedClassifierAndFile = Set((a1.classifier, f1), (a2.classifier, f2)).toSeq.sorted match {
-              case Seq(x)                                  => Some(x)
-              case Seq(x @ (None, _), (Some("native"), _)) => Some(x) // discard "native" classifier
-              case _                                       => None
-            }
-            for {
-              tpe <- mergedType
-              (classifier, file) <- mergedClassifierAndFile
-            } yield a1.withType(tpe).withClassifier(classifier) -> file
-          }
-          artifactAndJar map (artifactAndJar => m1.copy(artifactAndJar = Some(artifactAndJar)))
+          if (a1.classifier == Some("native") && a2.classifier == None)
+            Some(m2)
+          else if (a1.classifier == None && a2.classifier == Some("native"))
+            Some(m1)
+          else if (a1.`type` == Some("bundle") && a2.`type` == Some("jar"))
+            Some(m1)
+          else if (a1.`type` == Some("jar") && a2.`type` == Some("bundle"))
+            Some(m2)
+          else
+            None
        }
      }
    }
