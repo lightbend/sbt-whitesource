@@ -55,7 +55,7 @@ final case class WhiteSourceException(message: String = null, cause: Exception =
 
 sealed abstract class BaseAction(config: Config, childConfigs: Vector[ProjectConfig]) {
   val agentType: String    = "maven-plugin"     // TODO: use "sbt-plugin" or "sbt-whitesource"
-  val agentVersion: String = "2.4.9" // "0.1.0-SNAPSHOT" // TODO: Extract this from the build.
+  val agentVersion: String = "2.9.9.02" // TODO: Extract this from the build.
   import config._
 
   final def execute(): Unit = {
@@ -376,8 +376,9 @@ final class CheckPoliciesAction(config: Config, childConfigs: Vector[ProjectConf
     try {
       log info s"Checking Policies for project $aggregateProjectName in product $product"
 
-      val result = service.checkPolicyCompliance(
-        orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
+      val result = service.checkPolicyCompliance(service.getRequestFactory().newCheckPolicyComplianceRequest(
+        new CheckPolicyComplianceRequest(orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies, null, requesterEmail, null, null)
+      ))
 
       generateReport(result)
 
@@ -407,8 +408,9 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
     try {
       if (checkPolicies) {
         log info s"Checking Policies for project $aggregateProjectName in product $product"
-        val result = service.checkPolicyCompliance(
-          orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies)
+        val result = service.checkPolicyCompliance(service.getRequestFactory().newCheckPolicyComplianceRequest(
+          new CheckPolicyComplianceRequest(orgToken, product, productVersion, projectInfos.asJava, forceCheckAllDependencies, null, requesterEmail, null, null)
+        ))
 
         generateReport(result)
 
@@ -423,7 +425,10 @@ final class UpdateAction(config: Config, childConfigs: Vector[ProjectConfig]) ex
         }
       }
       log info "Sending Update Request to WhiteSource"
-      val updateResult = service.update(orgToken, requesterEmail, product, productVersion, projectInfos.asJava)
+      service.getRequestFactory()
+      val updateResult = service.update(service.getRequestFactory().newUpdateInventoryRequest(
+        new UpdateInventoryRequest(orgToken, product, productVersion, projectInfos.asJava, null.asInstanceOf[String], null.asInstanceOf[String])
+      ))
       reportUpdateResult(updateResult, log)
     } catch {
       case e: WssServiceException =>
