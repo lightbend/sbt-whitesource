@@ -54,7 +54,11 @@ mimaPreviousArtifacts := Set {
 import com.typesafe.tools.mima.core._
 mimaBinaryIssueFilters ++= Seq(
   // ProjectConfig is internal API (it has no key)
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.ProjectConfig.*")
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.ProjectConfig.*"),
+  // ModuleInfo is internal API (only used within private methods)
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.BaseAction.ModuleInfo"),
+  ProblemFilters.exclude[MissingClassProblem]("sbtwhitesource.BaseAction$ModuleInfo$"),
+  ProblemFilters.exclude[MissingClassProblem]("sbtwhitesource.BaseAction$ModuleInfo"),
 )
 
 bintrayOrganization := Some("sbt")
