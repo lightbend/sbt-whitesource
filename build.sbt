@@ -39,6 +39,8 @@ libraryDependencies += "org.whitesource" % "wss-agent-api"        % whitesourceV
 libraryDependencies += "org.whitesource" % "wss-agent-api-client" % whitesourceVersion
 libraryDependencies += "org.whitesource" % "wss-agent-report"     % whitesourceVersion
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
+
 mimaPreviousArtifacts := Set {
   val m = organization.value %% moduleName.value % "0.1.7"
   val sbtBinV = (sbtBinaryVersion in pluginCrossBuild).value
@@ -52,7 +54,11 @@ mimaPreviousArtifacts := Set {
 import com.typesafe.tools.mima.core._
 mimaBinaryIssueFilters ++= Seq(
   // ProjectConfig is internal API (it has no key)
-  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.ProjectConfig.*")
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.ProjectConfig.*"),
+  // ModuleInfo is internal API (only used within private methods)
+  ProblemFilters.exclude[DirectMissingMethodProblem]("sbtwhitesource.BaseAction.ModuleInfo"),
+  ProblemFilters.exclude[MissingClassProblem]("sbtwhitesource.BaseAction$ModuleInfo$"),
+  ProblemFilters.exclude[MissingClassProblem]("sbtwhitesource.BaseAction$ModuleInfo"),
 )
 
 bintrayOrganization := Some("sbt")
