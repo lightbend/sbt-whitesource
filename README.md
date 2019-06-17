@@ -15,7 +15,7 @@ an [external update agent][whitesource/agents] for sbt.
 1. Add the sbt plugin to `project/plugins.sbt`, like so:
 
 ```scala
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.15")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.16")
 ```
 
 [ws-Integrate]: https://saas.whitesourcesoftware.com/Wss/WSS.html#!adminOrganization_integration
