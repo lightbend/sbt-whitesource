@@ -338,7 +338,9 @@ object BaseAction {
         case (Some(_), None)                  => None
         case (None, None)                     => Some(m1)
         case (Some((a1, f1)), Some((a2, f2))) =>
-          if (a1.classifier == Some("native") && a2.classifier == None)
+          if (a1.classifier == a2.classifier && a1.`type` == a2.`type`)
+            Some(m1)
+          else if (a1.classifier == Some("native") && a2.classifier == None)
             Some(m2)
           else if (a1.classifier == None && a2.classifier == Some("native"))
             Some(m1)
