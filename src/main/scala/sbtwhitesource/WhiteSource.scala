@@ -340,13 +340,13 @@ object BaseAction {
         case (Some((a1, f1)), Some((a2, f2))) =>
           if (a1.classifier == a2.classifier && a1.`type` == a2.`type`)
             Some(m1)
-          else if (a1.classifier == Some("native") && a2.classifier == None)
+          else if (a1.classifier.isDefined && a2.classifier.isEmpty)
             Some(m2)
-          else if (a1.classifier == None && a2.classifier == Some("native"))
+          else if (a1.classifier.isEmpty && a2.classifier.isDefined)
             Some(m1)
-          else if (a1.`type` == Some("bundle") && a2.`type` == Some("jar"))
+          else if (a1.`type` == "bundle" && a2.`type` == "jar")
             Some(m1)
-          else if (a1.`type` == Some("jar") && a2.`type` == Some("bundle"))
+          else if (a1.`type` == "jar" && a2.`type` == "bundle")
             Some(m2)
           else
             None
