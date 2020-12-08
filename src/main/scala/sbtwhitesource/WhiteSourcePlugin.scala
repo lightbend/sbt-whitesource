@@ -140,7 +140,7 @@ object WhiteSourcePlugin extends AutoPlugin {
       def pass = cs.flatMap(c => Try(Credentials.toDirect(c)).toOption) find { _.realm == "whitesource" } match {
         case Some(cred) => cred.passwd
         case None =>
-          val msg = """Whitesource credential is missing. Append to credentials key with realm "whitesource""""
+          val msg = """Whitesource credential is missing. Append to credentials key with realm "whitesource" or set the WHITESOURCE_PASSWORD environment variable"""
           if (whitesourceFailOnError.value) sys.error(msg) else log.debug(msg)
           ""
       }
