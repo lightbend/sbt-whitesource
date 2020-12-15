@@ -34,8 +34,8 @@ On Travis CI, use its [Encrypted Environment Variables](https://docs.travis-ci.c
 For GitHub workflows, create a [Secret](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets) and reference it from the workflow:
 
 ```yaml
-      - name: sbt whitesourceCheckPolicies; whitesourceUpdate
-        run: sbt whitesourceCheckPolicies; whitesourceUpdate
+      - name: sbt "whitesourceCheckPolicies; whitesourceUpdate"
+        run: sbt "whitesourceCheckPolicies; whitesourceUpdate"
         env:
           WHITESOURCE_PASSWORD: ${{ secrets.WHITESOURCE_PASSWORD }}
 ```
