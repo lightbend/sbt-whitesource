@@ -20,14 +20,25 @@ addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
 
 [ws-Integrate]: https://saas.whitesourcesoftware.com/Wss/WSS.html#!adminOrganization_integration
 
-2. Set the Organization API Key (from WhiteSource's [Integrate][ws-Integrate] page) by appending to `credentials` in `~/.sbt/0.13/credentials.sbt`, like so:
+2. Set the Organization API Key (from WhiteSource's [Integrate][ws-Integrate] page) by appending to `credentials` in `~/.sbt/1.0/whitesource-credentials.sbt`, like so:
 
 ```scala
 credentials += Credentials(realm = "whitesource", host = "whitesourcesoftware.com",
   userName = "", passwd = "********" /* Organization API Key */)
 ```
 
-Or set the `WHITESOURCE_PASSWORD` environment variable. On Travis CI, use its [Encrypted Environment Variables](https://docs.travis-ci.com/user/environment-variables#defining-encrypted-variables-in-travisyml) feature.
+Or set the `WHITESOURCE_PASSWORD` environment variable to contain the organization API key.
+
+On Travis CI, use its [Encrypted Environment Variables](https://docs.travis-ci.com/user/environment-variables#defining-encrypted-variables-in-travisyml) feature.
+
+For GitHub workflows, create a [Secret](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets) and reference it from the workflow:
+
+```yaml
+      - name: sbt whitesourceCheckPolicies; whitesourceUpdate
+        run: sbt whitesourceCheckPolicies; whitesourceUpdate
+        env:
+          WHITESOURCE_PASSWORD: ${{ secrets.WHITESOURCE_PASSWORD }}
+```
 
 3. In your `build.sbt` set the product name and the aggregate project name and token, also available from WhiteSource's [Integrate][ws-Integrate] page:
 
